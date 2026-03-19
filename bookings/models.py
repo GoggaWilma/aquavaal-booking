@@ -108,6 +108,7 @@ class Booking(models.Model):
             self.approved_amount = self.calculated_amount
             super().save(update_fields=["approved_amount"])
         else:
+            super().save(*args, **kwargs)
             (*args, **kwargs)
         
 # -------------------------
