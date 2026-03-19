@@ -103,11 +103,12 @@ class Booking(models.Model):
         return self.attendance_status == "FINAL"
 
     def save(self, *args, **kwargs):
+        super().save
         if self.attendance_status == "FINAL" and self.approved_amount is None:
             self.approved_amount = self.calculated_amount
             super().save(update_fields=["approved_amount"])
         else:
-            super().save(*args, **kwargs)
+            (*args, **kwargs)
         
 # -------------------------
 # BOOKING STAND MODEL
