@@ -1,0 +1,64 @@
+from django.db import models
+from django.conf import settings
+from django.utils import timezone
+
+# existing imports...
+
+APPROVAL_STATUS_CHOICES = [
+    ("PENDING", "Pending"),
+  ("APPROVED", "Approved"),
+    ("REJECTED", "Rejected"),
+    ("OVERRIDDEN", "Overridden"),
+]
+
+
+class BookingStand(models.Model):
+
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name="booking_stands"
+    )
+
+    stand = models.ForeignKey(
+        Stand,
+        on_delete=models.CASCADE
+    )
+
+    approval_status = models.CharField(
+        max_length=20,
+        choices=APPROVAL_STATUS_CHOICES,
+        default="PENDING"
+    )
+
+    stage = models.IntegerField(default=1)
+
+    approved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approved_stands"
+    )
+
+    rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="rejected_stands"
+    )
+
+    rejected_reason = models.TextField(null=True, blank=True)
+
+    override_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="overridden_stands"
+    )
+
+    override_reason = models.TextField(null=True, blank=True)
+
+    action_timestamp = models.DateTimeField(null=True, blank=True)

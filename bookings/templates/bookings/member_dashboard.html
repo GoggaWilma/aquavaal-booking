@@ -1,0 +1,49 @@
+<h2>My Bookings</h2>
+
+<a class="button" href="/bookings/create/">
+Create New Booking
+</a>
+
+{% for booking in bookings %}
+  <div style="border:1px solid #ccc; padding:20px; margin-bottom:20px; border-radius:8px;">
+    
+    <h3>Booking {{ booking.id }}</h3>
+    
+    <p><strong>Arrival:</strong> {{ booking.arrival_datetime }}</p>
+    <p><strong>Departure:</strong> {{ booking.departure_datetime }}</p>
+    <p><strong>Status:</strong> {{ booking.status }}</p>
+    <p><strong>Amount Due:</strong> R{{ booking.calculated_amount }}</p>
+
+    <h4>Stands:</h4>
+    <ul>
+      {% for stand in booking.booking_stands.all %}
+        <li>
+          Stand {{ stand.stand.number }} — {{ stand.approval_status }}
+        </li>
+      {% endfor %}
+    </ul>
+
+{% if booking.status == "PARTIAL" %}
+  <form method="post" action="{% url 'proceed_booking' booking.id %}">
+    {% csrf_token %}
+    <button type="submit">
+      Proceed with Approved Stands
+    </button>
+  </form>
+
+{% elif booking.status == "READY_FOR_GATE" %}
+  <div style="margin-top:10px; padding:10px; background:#e6f4ea; border-radius:6px;">
+    <strong>Booking Confirmed.</strong><br>
+    Amount payable at gate: R{{ booking.calculated_amount }}
+  </div>
+
+{% elif booking.status == "REJECTED" %}
+  <div style="margin-top:10px; padding:10px; background:#fdecea; border-radius:6px;">
+    <strong>Booking Rejected.</strong>
+  </div>
+{% endif %}
+
+  </div>
+{% empty %}
+  <p>No bookings found.</p>
+{% endfor %}

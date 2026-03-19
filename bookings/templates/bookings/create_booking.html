@@ -1,0 +1,55 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Create Booking</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+text-align:center;
+padding-top:80px;
+}
+
+form{
+background:white;
+padding:30px;
+width:400px;
+margin:auto;
+border-radius:8px;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+button{
+padding:12px 20px;
+background:#2f6f8f;
+color:white;
+border:none;
+border-radius:6px;
+margin-top:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h2>Create Booking</h2>
+
+<form method="post">
+{% csrf_token %}
+
+{{ form.as_p }}
+
+<button type="submit">
+Create Booking
+</button>
+
+</form>
+
+</body>
+</html>

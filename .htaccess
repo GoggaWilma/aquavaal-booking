@@ -1,0 +1,6 @@
+Options -Indexes
+
+PassengerEnabled on
+PassengerAppRoot /home/appaquav/public_html
+PassengerPython /home/appaquav/virtualenv/workflow_app/3.10/bin/python
+PassengerStartupFile passenger_wsgi.py

@@ -1,0 +1,89 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aqua Vaal Hengelklub</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                        url("https://images.unsplash.com/photo-1501785888041-af3ef285b470");
+            background-size: cover;
+            background-position: center;
+            color: white;
+            text-align: center;
+        }
+
+        .container {
+            padding-top: 150px;
+        }
+
+        h1 {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 20px;
+            margin-bottom: 40px;
+        }
+
+        .buttons {
+            width: 300px;
+            margin: auto;
+        }
+
+        a.button {
+            display: block;
+            margin: 15px 0;
+            padding: 15px;
+            background: #4f8094;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 18px;
+        }
+
+        a.button:hover {
+            background: #6aa4ba;
+        }
+
+        footer {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            font-size: 14px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Aqua Vaal Hengelklub</h1>
+    <p>Aqua Vaal Booking System</p>
+
+    <div class="buttons">
+
+        <a class="button" href="/bookings/dashboard/">
+            Member Dashboard
+        </a>
+
+        <a class="button" href="/admin/">
+            Admin Login
+        </a>
+
+    </div>
+
+</div>
+
+<footer>
+Aqua Vaal Booking System
+</footer>
+
+</body>
+</html>
