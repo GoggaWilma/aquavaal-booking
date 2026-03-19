@@ -103,7 +103,7 @@ class Booking(models.Model):
         return self.attendance_status == "FINAL"
 
     def save(self, *args, **kwargs):
-    super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     if self.attendance_status == "FINAL" and self.approved_amount is None:
         self.approved_amount = self.calculated_amount
