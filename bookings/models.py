@@ -147,8 +147,6 @@ class BookingStand(models.Model):
 
     action_timestamp = models.DateTimeField(null=True, blank=True)
 
-    )
-
     approval_status = models.CharField(
         max_length=30,
         choices=APPROVAL_STATUS_CHOICES,
