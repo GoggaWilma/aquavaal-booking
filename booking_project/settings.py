@@ -33,6 +33,11 @@ ALLOWED_HOSTS = [
     "app.aquavaal.co.za",
     "www.app.aquavaal.co.za",
 ]
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://booking.aquavaal.co.za",
+    "https://aquavaal-booking.onrender.com",
+]
     
 INSTALLED_APPS = [
     'accounts',
