@@ -28,9 +28,12 @@ DEBUG = False
 # Application definition
 
 ALLOWED_HOSTS = [
+    "booking.aquavaal.co.za",
+    "aquavaal-booking.onrender.com",
     "app.aquavaal.co.za",
     "www.app.aquavaal.co.za",
-]    
+]
+    
 INSTALLED_APPS = [
     'accounts',
 'stands',
