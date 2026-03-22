@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 
-def test_view(request):
-    return HttpResponse("WORKING")
+def home(request):
+    return HttpResponse("Welcome to Aqua Vaal Hengelklub 🎣")
 
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
