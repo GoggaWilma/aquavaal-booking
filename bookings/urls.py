@@ -4,8 +4,8 @@ from .views import (
     proceed_booking,
     capture_payment,
     create_booking,
-    test_view,
 )
+
 from django.http import HttpResponse
 
 def home(request):
@@ -18,5 +18,4 @@ urlpatterns = [
     path("booking/<int:booking_id>/proceed/", proceed_booking),
     path("admin/capture-payment/<int:booking_id>/", capture_payment),
     path("create/", create_booking, name="create_booking"),
-    path("test/", test_view),
 ]
