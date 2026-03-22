@@ -11,8 +11,7 @@ class Command(BaseCommand):
             User.objects.create_superuser(
                 email='admin@aquavaal.co.za',
                 password='Admin123!'
-    )       )
-
+            )
             self.stdout.write(self.style.SUCCESS('Admin user created'))
         else:
             self.stdout.write('Admin already exists')
