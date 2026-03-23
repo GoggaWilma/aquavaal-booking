@@ -4,7 +4,8 @@ from .views import (
     proceed_booking,
     capture_payment,
     create_booking,
-     reports_dashboard
+    reports_dashboard
+    dashboard
 )
 
 from django.http import HttpResponse
