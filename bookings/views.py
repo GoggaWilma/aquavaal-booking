@@ -10,6 +10,10 @@ from django.contrib.admin.views.decorators import staff_member_required
 from .models import Booking, BookingStand
 from .forms import BookingForm
 
+from django.utils import timezone
+from django.db.models import Sum, Count
+from django.shortcuts import render
+
 
 @login_required
 def member_dashboard(request):
@@ -61,12 +65,6 @@ def create_booking(request):
     return render(request, "bookings/create_booking.html", {
         "form": form
     })
-
-from django.utils import timezone
-from django.db.models import Sum, Count
-from django.shortcuts import render
-from .models import Booking
-
 
 def reports_dashboard(request):
     today = timezone.now().date()
