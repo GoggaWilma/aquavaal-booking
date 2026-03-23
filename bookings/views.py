@@ -93,3 +93,20 @@ def reports_dashboard(request):
     }
 
     return render(request, 'reports/dashboard.html', context)
+
+from django.shortcuts import render
+from django.utils import timezone
+from .models import Booking
+
+def dashboard(request):
+    today = timezone.now().date()
+
+    todays_bookings = Booking.objects.filter(date=today)
+
+    context = {
+        'today': today,
+        'bookings': todays_bookings,
+        'total': todays_bookings.count(),
+    }
+
+    return render(request, 'dashboard.html', context)

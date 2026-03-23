@@ -1,0 +1,23 @@
+<h1>🎣 Aquavaal Dashboard</h1>
+
+<p><strong>Date:</strong> {{ today }}</p>
+<p><strong>Total Bookings Today:</strong> {{ total }}</p>
+
+<hr>
+
+<h2>📋 Today's Bookings</h2>
+
+<ul>
+{% for booking in bookings %}
+    <li>
+        {{ booking.customer_name }} - {{ booking.date }}
+    </li>
+{% empty %}
+    <li>No bookings today</li>
+{% endfor %}
+</ul>
+
+<hr>
+
+<a href="/admin/">⚙️ Admin</a> |
+<a href="/create/">➕ New Booking</a>

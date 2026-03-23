@@ -20,4 +20,5 @@ urlpatterns = [
     path("admin/capture-payment/<int:booking_id>/", capture_payment),
     path("create/", create_booking, name="create_booking"),
     path("reports/", reports_dashboard, name="reports"),
+    path("", dashboard, name="dashboard"),
 ]
