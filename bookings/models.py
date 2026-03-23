@@ -1,13 +1,11 @@
 from django.db import models
-from django.conf import settings
-from django.shortcuts import render
 from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 # -------------------------
 # BOOKING MODEL
 # -------------------------
-
-User = get_user_model()
 
 class Booking(models.Model):
     
@@ -49,8 +47,7 @@ class Booking(models.Model):
         return f"Booking {self.id}"
 
     def proceed_with_approved_stands(self):
-        if self.is_locked():
-            return
+        return True  # temporary safe placeholder
 
         for stand in self.booking_stands.filter(
             approval_status="REJECTED",
