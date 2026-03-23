@@ -1,7 +1,19 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 class Stand(models.Model):
+    number = models.IntegerField(unique=True)
+
+    is_member_owned = models.BooleanField(default=False)
+
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
 
     SECTION_CHOICES = [
         ('ESKOM', 'Eskom'),

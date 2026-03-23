@@ -77,7 +77,6 @@ APPROVAL_STATUS_CHOICES = [
     ("READY_FOR_GATE", "Ready For Gate"),
 ]
 
-
 class BookingStand(models.Model):
     booking = models.ForeignKey(
         Booking,
@@ -85,7 +84,12 @@ class BookingStand(models.Model):
         related_name="booking_stands"
     )
 
-    stand_number = models.IntegerField(null=True, blank=True)
+    stand = models.ForeignKey(
+        "stands.Stand",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
 
     approval_status = models.CharField(
         max_length=30,
@@ -100,6 +104,21 @@ class BookingStand(models.Model):
     def __str__(self):
         return f"Stand {self.stand_number} - {self.approval_status}"
 
+    from django.core.exceptions import ValidationError
+
+    def clean(self):
+        overlapping = BookingStand.objects.filter(
+            stand=self.stand,
+            booking__arrival_datetime__lt=self.booking.departure_datetime,
+            booking__departure_datetime__gt=self.booking.arrival_datetime,
+        ).exclude(id=self.id)
+
+        if overlapping.exists():
+            raise ValidationError(f"Stand {self.stand.number} is already booked for this period.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 # -------------------------
 # AUDIT MODEL
