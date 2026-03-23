@@ -61,3 +61,35 @@ def create_booking(request):
     return render(request, "bookings/create_booking.html", {
         "form": form
     })
+
+from django.utils import timezone
+from django.db.models import Sum, Count
+from django.shortcuts import render
+from .models import Booking
+
+
+def reports_dashboard(request):
+    today = timezone.now().date()
+
+    # Today's bookings
+    todays_bookings = Booking.objects.filter(date=today)
+
+    total_bookings = todays_bookings.count()
+
+    total_revenue = todays_bookings.aggregate(
+        total=Sum('approved_amount')
+    )['total'] or 0
+
+    # Outstanding payments
+    outstanding = Booking.objects.filter(
+        approved_amount__isnull=True
+    ).count()
+
+    context = {
+        'total_bookings': total_bookings,
+        'total_revenue': total_revenue,
+        'outstanding': outstanding,
+        'today': today,
+    }
+
+    return render(request, 'reports/dashboard.html', context)
