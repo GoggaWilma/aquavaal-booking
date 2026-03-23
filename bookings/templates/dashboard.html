@@ -1,1 +1,19 @@
-<h1>Dashboard is working 🎣</h1>
+<h1>🎣 Aqu Vaal Hengelklub Dashboard</h1>
+
+<p>Total Bookings: {{ total }}</p>
+
+<hr>
+
+<h2>Recent Bookings</h2>
+
+<ul>
+{% for booking in bookings %}
+    <li>Booking ID: {{ booking.id }}</li>
+{% empty %}
+    <li>No bookings yet</li>
+{% endfor %}
+</ul>
+
+<hr>
+
+<a href="/admin/">Admin</a>

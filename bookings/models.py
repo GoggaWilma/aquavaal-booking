@@ -30,6 +30,19 @@ class Booking(models.Model):
 
     override_note = models.TextField(null=True, blank=True)
 
+    from django.shortcuts import render
+    from .models import Booking
+
+    def dashboard(request):
+        bookings = Booking.objects.all()[:10]  # last 10 bookings (safe)
+
+        context = {
+            'bookings': bookings,
+            'total': bookings.count(),
+        }
+
+        return render(request, 'dashboard.html', context)
+
     def __str__(self):
         return f"Booking {self.id}"
 
