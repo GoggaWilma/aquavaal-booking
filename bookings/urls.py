@@ -1,12 +1,5 @@
 from django.urls import path
-from .views import (
-    member_dashboard,
-    proceed_booking,
-    capture_payment,
-    create_booking,
-    reports_dashboard
-    dashboard
-)
+from .views import member_dashboard, proceed_booking, capture_payment, create_booking, dashboard
 
 from django.http import HttpResponse
 
