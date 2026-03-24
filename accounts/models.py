@@ -4,14 +4,17 @@ from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
 
+# -------------------------
+# CUSTOM USER MANAGER
+# -------------------------
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError("The Email field must be set")
 
         email = self.normalize_email(email)
-
-        user = self.model(email=email, **extra_fields)   # ✅ FIXED LINE
+        user = self.model(email=email, **extra_fields)
 
         user.set_password(password)
         user.save(using=self._db)
@@ -21,15 +24,17 @@ class CustomUserManager(BaseUserManager):
         extra_fields.setdefault("is_staff", True)
         extra_fields.setdefault("is_superuser", True)
 
-        return self.create_user(email, password, **extra_fields)
-
         if extra_fields.get("is_staff") is not True:
-            raise ValueError("Superuser must have is_staff=True.")
+            raise ValueError("Superuser must have is_staff=True")
         if extra_fields.get("is_superuser") is not True:
-            raise ValueError("Superuser must have is_superuser=True.")
+            raise ValueError("Superuser must have is_superuser=True")
 
         return self.create_user(email, password, **extra_fields)
 
+
+# -------------------------
+# CUSTOM USER
+# -------------------------
 
 class CustomUser(AbstractUser):
     username = None
@@ -44,33 +49,63 @@ class CustomUser(AbstractUser):
         return self.email
 
 
+# -------------------------
+# PROFILE MODEL
+# -------------------------
+
 class Profile(models.Model):
 
-    MEMBERSHIP_CHOICES = [
-        ("guest", "Guest"),
-        ("member", "Member"),
-        ("expired", "Expired Member"),
+    MEMBERSHIP_TYPE_CHOICES = [
+        ("MEMBER", "Member"),
+        ("GUEST", "Guest"),
+        ("EXPIRED", "Expired Member"),
+    ]
+
+    GENDER_CHOICES = [
+        ("B", "Junior Boys (<19)"),
+        ("L", "Senior Ladies (19-49)"),
+        ("O", "Masters Men (50+)"),
+        ("G", "Junior Girls (<19)"),
+        ("M", "Senior Men (19-49)"),
+        ("T", "Masters Ladies (50+)"),
     ]
 
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+
     membership_type = models.CharField(
         max_length=20,
-        choices=MEMBERSHIP_CHOICES,
-        default="guest"
+        choices=MEMBERSHIP_TYPE_CHOICES,
+        default="GUEST"
     )
 
-    savof_code = models.CharField(max_length=50, blank=True, null=True)
-    membership_expiry = models.DateField(blank=True, null=True)
+    surname = models.CharField(max_length=100, null=True, blank=True) 
+    first_name = models.CharField(max_length=100, null=True, blank=True)
+    call_name = models.CharField(max_length=100, null=True, blank=True)
+    initials = models.CharField(max_length=10, null=True, blank=True)
 
-    phone = models.CharField(max_length=20, blank=True, null=True)
-    date_of_birth = models.DateField(blank=True, null=True)
+    id_number = models.CharField(max_length=20, null=True, blank=True)
+    date_of_birth = models.CharField(max_length=20, null=True, blank=True)
+    savof_code = models.CharField(max_length=10, null=True, blank=True)
+
+    membership_expiry_date = models.DateField(null=True, blank=True)
+
+    cell_number = models.CharField(max_length=20, null=True, blank=True)
+
+    house_number = models.CharField(max_length=10, null=True, blank=True)
+    street_name = models.CharField(max_length=100, null=True, blank=True)
+    suburb = models.CharField(max_length=100, null=True, blank=True)
+    city = models.CharField(max_length=100, null=True, blank=True)
+    province = models.CharField(max_length=100, null=True, blank=True) 
+    postal_code = models.CharField(max_length=10, null=True, blank=True)
+
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
 
     def is_active_member(self):
-        if self.membership_type != "member":
+        if self.membership_type != "MEMBER":
             return False
-        if self.membership_expiry and self.membership_expiry < timezone.now().date():
+        if not self.membership_expiry_date:
             return False
-        return True
+        return self.membership_expiry_date >= timezone.now().date()
 
     def __str__(self):
         return f"{self.user.email} Profile"
