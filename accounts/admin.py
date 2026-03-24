@@ -9,4 +9,4 @@ class CustomUserAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "membership_type", "savof_code", "membership_expiry_date")
+    list_display = ("user", "membership_type", "owned_stand", "savof_code", "membership_expiry_date")

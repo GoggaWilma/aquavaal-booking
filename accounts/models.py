@@ -64,12 +64,12 @@ class Profile(models.Model):
     ]
 
     GENDER_CHOICES = [
-        ("B", "B Junior Boys (<19)"),
-        ("L", "L Senior Ladies (19-49)"),
-        ("O", "O Masters Men (50+)"),
-        ("G", "G Junior Girls (<19)"),
-        ("M", "M Senior Men (19-49)"),
-        ("T", "T Masters Ladies (50+)"),
+        ("O", "O Men Masters (50+)"),
+        ("M", "M Men Senior (19-49)"),
+        ("B", "B Boys Junior (<19)"),
+        ("T", "T Ladies Masters (50+)"),
+        ("L", "L Ladies Senior (19-49)"),
+        ("G", "G Girls Junior (<19)"),
     ]
 
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
@@ -78,6 +78,14 @@ class Profile(models.Model):
         max_length=20,
         choices=MEMBERSHIP_TYPE_CHOICES,
         default="GUEST"
+    )
+
+    owned_stand = models.ForeignKey(
+        "stands.Stand",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="Stand owned by this member (if applicable)"
     )
 
     surname = models.CharField(max_length=100, null=True, blank=True) 
