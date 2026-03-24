@@ -41,8 +41,9 @@ CSRF_TRUSTED_ORIGINS = [
     
 INSTALLED_APPS = [
     'accounts',
-'stands',
-'bookings',
+    'stands',
+    'bookings',
+    'import_export',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -153,4 +154,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.CustomUser'
 
 import os
-

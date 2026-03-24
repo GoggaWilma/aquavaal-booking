@@ -1,12 +1,20 @@
 from django.contrib import admin
-from .models import CustomUser, Profile
+from import_export.admin import ImportExportModelAdmin
+from .models import Profile, CustomUser
 
 
 @admin.register(CustomUser)
 class CustomUserAdmin(admin.ModelAdmin):
-    list_display = ("email", "is_staff", "is_superuser")
+    list_display = ("email", "is_staff", "is_active")
 
 
 @admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "membership_type", "owned_stand", "savof_code", "membership_expiry_date")
+class ProfileAdmin(ImportExportModelAdmin):
+    list_display = (
+        "user",
+        "surname",
+        "call_name",
+        "membership_type",
+        "owned_stand",
+        "savof_code",
+    )
