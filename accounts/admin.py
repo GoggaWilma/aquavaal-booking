@@ -1,6 +1,7 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
 from .models import Profile, CustomUser
+from .resources import ProfileResource
 
 
 @admin.register(CustomUser)
@@ -10,6 +11,8 @@ class CustomUserAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(ImportExportModelAdmin):
+    resource_class = ProfileResource
+
     list_display = (
         "user",
         "surname",
