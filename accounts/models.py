@@ -57,17 +57,19 @@ class Profile(models.Model):
 
     MEMBERSHIP_TYPE_CHOICES = [
         ("MEMBER", "Member"),
+        ("SOCIAL MEMBER", "Social Member"),
         ("GUEST", "Guest"),
+        ("UNPAID", "Unpaid Member"), 
         ("EXPIRED", "Expired Member"),
     ]
 
     GENDER_CHOICES = [
-        ("B", "Junior Boys (<19)"),
-        ("L", "Senior Ladies (19-49)"),
-        ("O", "Masters Men (50+)"),
-        ("G", "Junior Girls (<19)"),
-        ("M", "Senior Men (19-49)"),
-        ("T", "Masters Ladies (50+)"),
+        ("B", "B Junior Boys (<19)"),
+        ("L", "L Senior Ladies (19-49)"),
+        ("O", "O Masters Men (50+)"),
+        ("G", "G Junior Girls (<19)"),
+        ("M", "M Senior Men (19-49)"),
+        ("T", "T Masters Ladies (50+)"),
     ]
 
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
@@ -83,9 +85,11 @@ class Profile(models.Model):
     call_name = models.CharField(max_length=100, null=True, blank=True)
     initials = models.CharField(max_length=10, null=True, blank=True)
 
-    id_number = models.CharField(max_length=20, null=True, blank=True)
+    ID_number = models.CharField(max_length=20, null=True, blank=True)
     date_of_birth = models.CharField(max_length=20, null=True, blank=True)
     savof_code = models.CharField(max_length=10, null=True, blank=True)
+    
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
 
     membership_expiry_date = models.DateField(null=True, blank=True)
 
@@ -97,8 +101,6 @@ class Profile(models.Model):
     city = models.CharField(max_length=100, null=True, blank=True)
     province = models.CharField(max_length=100, null=True, blank=True) 
     postal_code = models.CharField(max_length=10, null=True, blank=True)
-
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
 
     def is_active_member(self):
         if self.membership_type != "MEMBER":
