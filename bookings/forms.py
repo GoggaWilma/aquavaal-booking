@@ -30,10 +30,4 @@ class BookingForm(forms.ModelForm):
 
     class Meta:
         model = Booking
-        fields = [
-            "arrival_datetime",
-            "departure_datetime",
-            "member_count",
-            "non_member_adult_count",
-            "child_count"
-        ]
+        fields = "__all__"

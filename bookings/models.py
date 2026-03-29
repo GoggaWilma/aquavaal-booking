@@ -1,12 +1,20 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 User = get_user_model()
 
 # -------------------------
 # BOOKING MODEL
 # -------------------------
+
+BOOKING_MODE_CHOICES = [
+    ("ADMIN", "Admin Captured"),
+    ("REQUEST", "Member Request"),
+    ("WALKIN", "Walk-in"),
+]
+
 
 class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -15,11 +23,15 @@ class Booking(models.Model):
     arrival_datetime = models.DateTimeField()
     departure_datetime = models.DateTimeField()
 
-    booking_mode = models.CharField(max_length=50)
+    booking_mode = models.CharField(
+        max_length=20,
+        choices=BOOKING_MODE_CHOICES,
+        default="ADMIN"
+    )
 
     status = models.CharField(max_length=50, default="PENDING")
     payment_status = models.CharField(max_length=50, default="PENDING")
-    attendance_status = models.CharField(max_length=50, default="CREATED")
+    attendance_status = models.CharField(max_length=50, default="PENDING")
 
     member_count = models.PositiveIntegerField(default=0)
     non_member_adult_count = models.PositiveIntegerField(default=0)
@@ -65,7 +77,6 @@ class Booking(models.Model):
             self.approved_amount = self.calculated_amount
             super().save(update_fields=["approved_amount"])
 
-
 # -------------------------
 # BOOKING STAND MODEL
 # -------------------------
@@ -102,7 +113,8 @@ class BookingStand(models.Model):
     action_timestamp = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Stand {self.stand_number} - {self.approval_status}"
+        stand_label = self.stand.number if self.stand else "No Stand"
+        return f"Stand {stand_label} - {self.approval_status}"
 
     from django.core.exceptions import ValidationError
 
@@ -140,7 +152,6 @@ class BookingStandAudit(models.Model):
 
     old_status = models.CharField(max_length=30)
     new_status = models.CharField(max_length=30)
-
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

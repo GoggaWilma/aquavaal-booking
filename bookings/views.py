@@ -8,12 +8,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.admin.views.decorators import staff_member_required
 
 from .models import Booking, BookingStand
-from .forms import BookingForm
 
 from django.utils import timezone
 from django.db.models import Sum, Count
 from django.shortcuts import render
 
+from .forms import BookingForm
+
+def some_view(request):
+    form = BookingForm()
+    return render(request, "some_template.html", {"form": form})
 
 @login_required
 def member_dashboard(request):

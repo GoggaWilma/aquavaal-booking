@@ -1,21 +1,29 @@
 from import_export import resources, fields
-from import_export.widgets import ForeignKeyWidget
 from .models import Profile, CustomUser
+from import_export import resources
+from .models import CustomUser
+
+class UserResource(resources.ModelResource):
+
+    class Meta:
+        model = CustomUser
+        import_id_fields = ('email',)
+        fields = (
+            'email',
+            'is_staff',
+            'is_active',
+        )
 
 
 class ProfileResource(resources.ModelResource):
-    # Map CSV column "user" (email) to FK via email
-    user = fields.Field(
-        column_name='user',
-        attribute='user',
-        widget=ForeignKeyWidget(CustomUser, 'email')
-    )
+
+    email = fields.Field(column_name='email')
 
     class Meta:
         model = Profile
-        import_id_fields = ('user',)
+        import_id_fields = ('email',)
         fields = (
-            'user',
+            'email',
             'membership_type',
             'surname',
             'first_name',
@@ -24,21 +32,16 @@ class ProfileResource(resources.ModelResource):
             'gender',
             'owned_stand',
         )
-        skip_unchanged = True
-        report_skipped = True
 
     def before_import_row(self, row, **kwargs):
-        email = (row.get("user") or "").strip().lower()
+        email = (row.get("email") or "").strip().lower()
 
-        # 🚫 Block bad rows early
         if not email:
-            raise ValueError("Missing 'user' (email) value in this row")
+            raise ValueError("Missing email in row")
 
-        # Ensure user exists
         user, created = CustomUser.objects.get_or_create(
             email=email,
-            defaults={"username": email}  # safe even if username unused
+            defaults={"username": email}
         )
 
-        # Keep email (not id) so ForeignKeyWidget resolves it
-        row["user"] = user.email
+        row["user"] = user.id
