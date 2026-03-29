@@ -29,22 +29,22 @@ class BookingAdmin(admin.ModelAdmin):
         "status",
     )
 
-        fields = (
-            "user",
-            "booking_mode",
-            "arrival_datetime",
-            "departure_datetime",
-            "status",
-            "payment_status",
-            "attendance_status",
-            "member_count",
-            "non_member_adult_count",
-            "child_count",
-            "total_days",
-            "total_nights",
-            "calculated_amount",
-            "approved_amount",
-            "override_note",
+    fields = (
+        "user",
+        "booking_mode",
+        "arrival_datetime",
+        "departure_datetime",
+        "status",
+        "payment_status",
+        "attendance_status",
+        "member_count",
+        "non_member_adult_count",
+        "child_count",
+        "total_days",
+        "total_nights",
+        "calculated_amount",
+        "approved_amount",
+        "override_note",
 )
     
 
