@@ -1,33 +1,23 @@
 from django import forms
-from .models import Booking
 from stands.models import Stand
 
-class BookingForm(forms.ModelForm):
 
-    stands = forms.ModelMultipleChoiceField(
-        queryset=Stand.objects.all(),
-        widget=forms.CheckboxSelectMultiple,
-        required=True
+class DashboardBookingForm(forms.Form):
+    arrival_date = forms.DateField(
+        widget=forms.DateInput(attrs={"type": "date"})
+    )
+    departure_date = forms.DateField(
+        widget=forms.DateInput(attrs={"type": "date"})
+    )
+    stand = forms.ModelChoiceField(
+        queryset=Stand.objects.none(),
+        empty_label="Select an available stand",
+        required=False,
     )
 
-    arrival_datetime = forms.DateTimeField(
-        widget=forms.DateTimeInput(
-            attrs={
-                "type": "datetime-local",
-                "class": "form-control"
-            }
-        )
-    )
+    def __init__(self, *args, **kwargs):
+        available_stands = kwargs.pop("available_stands", None)
+        super().__init__(*args, **kwargs)
 
-    departure_datetime = forms.DateTimeField(
-        widget=forms.DateTimeInput(
-            attrs={
-                "type": "datetime-local",
-                "class": "form-control"
-            }
-        )
-    )
-
-    class Meta:
-        model = Booking
-        fields = "__all__"
+        if available_stands is not None:
+            self.fields["stand"].queryset = available_stands.order_by("number")
