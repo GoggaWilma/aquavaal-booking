@@ -1,3 +1,4 @@
+from django.utils import timezone
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
@@ -7,7 +8,6 @@ from datetime import datetime, time
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from django.utils import timezone
 
 from stands.models import Stand
 from .models import Booking, BookingStand
@@ -45,8 +45,6 @@ def dashboard(request):
         if booking_form.is_valid():
             arrival_date = booking_form.cleaned_data["arrival_date"]
             departure_date = booking_form.cleaned_data["departure_date"]
-
-            from django.utils import timezone
 
             arrival_dt = timezone.make_aware(datetime.combine(arrival_date, time(12, 0)))
             departure_dt = timezone.make_aware(datetime.combine(departure_date, time(12, 0)))
