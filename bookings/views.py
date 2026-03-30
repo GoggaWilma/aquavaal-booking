@@ -1,3 +1,6 @@
+import time
+start = time.time()
+
 from django.http import HttpResponse
 
 def home(request):
@@ -217,23 +220,29 @@ def stand_report_pdf(request):
     y = page_height - margin_y_top
     col = 0
 
-    for stand in stands:
-        qs = BookingStand.objects.filter(
-            stand=stand,
-            is_active=True
-        ).select_related("booking", "booking__user")
+    booking_stands = BookingStand.objects.filter(
+        is_active=True
+    ).select_related("booking", "booking__user", "stand")
 
-        if arrival and departure:
-            qs = qs.filter(
-                booking__arrival_datetime__lt=departure,
-                booking__departure_datetime__gt=arrival,
-            )
+    # Apply date filter once
+    if arrival and departure:
+        booking_stands = booking_stands.filter(
+            booking__arrival_datetime__lt=departure,
+            booking__departure_datetime__gt=arrival,
+    )
+
+    # Build lookup
+    stand_map = {}
+    for bs in booking_stands:
+        if bs.stand_id not in stand_map:
+            stand_map[bs.stand_id] = bs
+    
         elif arrival:
             qs = qs.filter(booking__departure_datetime__gt=arrival)
         elif departure:
             qs = qs.filter(booking__arrival_datetime__lt=departure)
 
-        booking_stand = qs.order_by("booking__arrival_datetime").first()
+        booking_stand = stand_map.get(stand.id)
 
         is_booked = booking_stand is not None
         status_color = booked_color if is_booked else available_color
@@ -325,3 +334,5 @@ def stand_report_pdf(request):
 
     p.save()
     return response
+
+    print("PDF generated in:", time.time() - start)
