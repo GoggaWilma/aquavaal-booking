@@ -18,17 +18,6 @@
 
 <a href="/admin/">Admin</a>
 
-<a href="/report/stands/" style="
-    display:inline-block;
-    padding:12px 20px;
-    background:#2f6f8f;
-    color:white;
-    border-radius:6px;
-    text-decoration:none;
-">
-📄 Download Stand Report
-</a>
-
 <h2>Stand Layout PDF</h2>
 
 <form action="/report/stands/" method="get" style="margin-top:20px;">
@@ -49,3 +38,18 @@
         Generate Stand Layout PDF
     </button>
 </form>
+
+<hr>
+
+<h2>Profiles</h2>
+
+<ul>
+{% for profile in profiles %}
+    <li>
+        {{ profile.user.email }}
+        ({{ profile.membership_type }})
+    </li>
+{% empty %}
+    <li>No profiles yet</li>
+{% endfor %}
+</ul>

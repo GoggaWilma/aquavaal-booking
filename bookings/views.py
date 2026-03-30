@@ -1,3 +1,4 @@
+from accounts.models import Profile
 import time
 start = time.time()
 
@@ -107,10 +108,13 @@ def dashboard(request):
     today = timezone.now().date()
     todays_bookings = Booking.objects.filter(arrival_datetime__date=today)
 
+    profiles = Profile.objects.select_related("user").order_by("-id")[:10]
+
     context = {
         'today': today,
         'bookings': todays_bookings,
         'total': todays_bookings.count(),
+        'profiles': profiles,
     }
 
     return render(request, 'dashboard.html', context)
