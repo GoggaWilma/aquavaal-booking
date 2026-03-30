@@ -15,9 +15,17 @@ BOOKING_MODE_CHOICES = [
     ("WALKIN", "Walk-in"),
 ]
 
-
 class Booking(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    guest_name = models.CharField(max_length=150, null=True, blank=True)
+    guest_email = models.EmailField(null=True, blank=True)
+    guest_phone = models.CharField(max_length=30, null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     arrival_datetime = models.DateTimeField()
@@ -48,10 +56,17 @@ class Booking(models.Model):
     def __str__(self):
         return f"Booking {self.id}"
 
+    def display_name(self):
+        if self.user:
+            return self.user.get_full_name().strip() or self.user.email
+        return self.guest_name or "Guest"
+
     def is_locked(self):
         return self.attendance_status == "FINAL"
 
     def user_profile(self):
+        if not self.user:
+            return None
         return getattr(self.user, "profile", None)
 
     def booking_user_is_active_member(self):
@@ -70,14 +85,15 @@ class Booking(models.Model):
         if self.departure_datetime <= self.arrival_datetime:
             raise ValidationError("Departure must be after arrival.")
 
+        if not self.user and not self.guest_name:
+            raise ValidationError("Provide either a linked user or a guest name.")
+
     def recalculate_financials(self):
         DAY_RATE = 80
         NIGHT_RATE = 40
 
-        # Guests are always billable
         payable_guests = self.non_member_adult_count
 
-        # If the booking owner is NOT an active member, count them as billable too
         if not self.booking_user_is_active_member():
             payable_guests += 1
 
@@ -103,6 +119,7 @@ class Booking(models.Model):
         if self.attendance_status == "FINAL" and self.approved_amount is None:
             self.approved_amount = self.calculated_amount
             super().save(update_fields=["approved_amount"])
+
 
 #--------------------------
 # BOOKING STAND MODEL

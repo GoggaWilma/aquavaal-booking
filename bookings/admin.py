@@ -1,12 +1,5 @@
 from django.contrib import admin
-from django import forms
 from .models import Booking, BookingStand
-
-
-class BookingAdminForm(forms.ModelForm):
-    class Meta:
-        model = Booking
-        fields = "__all__"
 
 
 class BookingStandInline(admin.TabularInline):
@@ -16,11 +9,9 @@ class BookingStandInline(admin.TabularInline):
 
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
-    form = BookingAdminForm
-
     list_display = (
         "id",
-        "user",
+        "display_booking_name",
         "user_membership_status",
         "booking_mode",
         "payment_status",
@@ -32,6 +23,9 @@ class BookingAdmin(admin.ModelAdmin):
 
     fields = (
         "user",
+        "guest_name",
+        "guest_email",
+        "guest_phone",
         "booking_mode",
         "arrival_datetime",
         "departure_datetime",
@@ -46,18 +40,22 @@ class BookingAdmin(admin.ModelAdmin):
         "calculated_amount",
         "approved_amount",
         "override_note",
-)
-    
+    )
 
-    list_filter = ("booking_mode", "status")
+    list_filter = ("booking_mode", "status", "payment_status", "attendance_status")
     inlines = [BookingStandInline]
 
+    def display_booking_name(self, obj):
+        return obj.display_name()
+    display_booking_name.short_description = "Guest / User"
+
     def user_membership_status(self, obj):
+        if not obj.user:
+            return "Guest"
         profile = getattr(obj.user, "profile", None)
         if not profile:
             return "No Profile"
         if profile.is_active_member():
             return "Active Member"
         return profile.membership_type
-
     user_membership_status.short_description = "Membership"

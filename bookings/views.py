@@ -66,7 +66,7 @@ def dashboard(request):
                         booked_stands.append({
                             "id": bs.stand.id,
                             "number": bs.stand.number,
-                            "name": bs.booking.user.get_full_name().strip() or bs.booking.user.email,
+                            "name": bs.booking.display_name(),
                         })
 
                 available_stands = Stand.objects.exclude(id__in=booked_stand_ids).order_by("number")
@@ -245,7 +245,7 @@ def stand_report_pdf(request):
 
         if is_booked:
             booking = booking_stand.booking
-            guest_name = booking.user.get_full_name().strip() or booking.user.email or "-"
+            guest_name = booking.display_name()
 
             if len(guest_name) > 20:
                 guest_name = guest_name[:17] + "..."
