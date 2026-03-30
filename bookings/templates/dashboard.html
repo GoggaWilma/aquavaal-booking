@@ -12,12 +12,12 @@
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: 30px auto;
             padding: 20px;
         }
 
-        h1, h2 {
+        h1, h2, h3 {
             color: #154360;
         }
 
@@ -34,8 +34,7 @@
             box-shadow: 0 4px 14px rgba(0,0,0,0.08);
         }
 
-        .button,
-        button {
+        button, .button {
             display: inline-block;
             padding: 10px 16px;
             background: #2f6f8f;
@@ -54,20 +53,12 @@
             margin-bottom: 15px;
         }
 
-        input, select {
+        input[type="date"] {
             padding: 10px;
             border: 1px solid #ccd1d1;
             border-radius: 6px;
             width: 100%;
             max-width: 320px;
-        }
-
-        ul {
-            padding-left: 20px;
-        }
-
-        li {
-            margin-bottom: 8px;
         }
 
         .messages {
@@ -90,19 +81,68 @@
             color: #922b21;
         }
 
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+        .stand-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stand-tile {
+            width: 110px;
+            min-height: 70px;
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            border: 2px solid transparent;
+        }
+
+        .stand-available {
+            background: #d4efdf;
+            color: #1e8449;
+            cursor: pointer;
+        }
+
+        .stand-booked {
+            background: #f9d6d5;
+            color: #922b21;
+        }
+
+        .stand-selected {
+            border: 3px solid #154360;
+        }
+
+        .stand-name {
+            display: block;
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: normal;
         }
 
         .button-row {
             margin-top: 15px;
         }
 
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
         .muted {
             color: #7b8a8b;
             font-size: 14px;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
         }
 
         @media (max-width: 900px) {
@@ -115,7 +155,7 @@
 <body>
     <div class="container">
         <h1>Aqua Vaal Dashboard</h1>
-        <p class="subtext">Choose your dates, check available stands, then create your booking.</p>
+        <p class="subtext">Choose dates, check availability, click a stand, then create your booking.</p>
 
         {% if messages %}
         <div class="messages">
@@ -130,7 +170,7 @@
         <div class="section">
             <h2>Create Booking</h2>
 
-            <form method="post">
+            <form method="post" id="booking-form">
                 {% csrf_token %}
 
                 <div class="form-row">
@@ -143,18 +183,47 @@
                     {{ booking_form.departure_date }}
                 </div>
 
+                {{ booking_form.stand }}
+
                 <div class="button-row">
                     <button type="submit" name="action" value="check">Check Availability</button>
                     <a href="/report/stands/" class="button secondary" style="margin-left:10px;">View Stand Layout PDF</a>
                 </div>
 
-                {% if booking_form.fields.stand.queryset %}
+                {% if available_stand_numbers or booked_stands %}
                     <hr style="margin: 25px 0;">
+                    <h3>Select a Stand</h3>
+                    <p class="muted">Green stands are available. Red stands are already booked.</p>
 
-                    <div class="form-row">
-                        <label for="{{ booking_form.stand.id_for_label }}">Available Stand</label><br>
-                        {{ booking_form.stand }}
-                    </div>
+                    {% for section_name, stand_numbers in stand_sections %}
+                        <div style="margin-bottom: 20px;">
+                            <h3>{{ section_name }}</h3>
+                            <div class="stand-grid">
+                                {% for number in stand_numbers %}
+                                    {% with booked=None %}
+                                        {% for stand in booked_stands %}
+                                            {% if stand.number == number %}
+                                                <div class="stand-tile stand-booked">
+                                                    Stand {{ number }}
+                                                    <span class="stand-name">{{ stand.name }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                        {% if number in available_stand_numbers %}
+                                            <div
+                                                class="stand-tile stand-available {% if selected_stand_id and booking_form.stand.value|stringformat:'s' == '' %}{% endif %}"
+                                                data-stand-number="{{ number }}"
+                                                onclick="selectStandByNumber({{ number }})"
+                                            >
+                                                Stand {{ number }}
+                                            </div>
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
 
                     <div class="button-row">
                         <button type="submit" name="action" value="book">Create Booking</button>
@@ -166,10 +235,10 @@
         <div class="two-col">
             <div class="section">
                 <h2>Available Stand Numbers</h2>
-                {% if available_stands %}
-                    <p>{{ available_stands|join:", " }}</p>
+                {% if available_stand_numbers %}
+                    <p>{{ available_stand_numbers|join:", " }}</p>
                 {% else %}
-                    <p>No available stands loaded yet. Select dates and click <strong>Check Availability</strong>.</p>
+                    <p>No available stands loaded yet.</p>
                 {% endif %}
             </div>
 
@@ -205,5 +274,33 @@
             {% endif %}
         </div>
     </div>
+
+    <script>
+        function selectStandByNumber(standNumber) {
+            const hiddenField = document.getElementById("id_stand");
+            const standMap = {
+                {% for number in available_stand_numbers %}
+                    {{ number }}: {% for stand in booking_form.fields.stand.queryset %}{% if stand.number == number %}{{ stand.id }}{% endif %}{% endfor %},
+                {% endfor %}
+            };
+
+            if (standMap[standNumber]) {
+                hiddenField.value = standMap[standNumber];
+            }
+
+            document.querySelectorAll(".stand-available").forEach(tile => {
+                tile.classList.remove("stand-selected");
+            });
+
+            const tiles = document.querySelectorAll(".stand-available");
+            tiles.forEach(tile => {
+                if (parseInt(tile.dataset.standNumber) === standNumber) {
+                    tile.classList.add("stand-selected");
+                }
+            });
+        }
+    </script>
 </body>
 </html>
+
+<a href="/report/stands/" class="button secondary" style="margin-left:10px;">View Stand Layout PDF</a>

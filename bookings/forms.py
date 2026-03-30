@@ -11,8 +11,8 @@ class DashboardBookingForm(forms.Form):
     )
     stand = forms.ModelChoiceField(
         queryset=Stand.objects.none(),
-        empty_label="Select an available stand",
         required=False,
+        widget=forms.HiddenInput()
     )
 
     def __init__(self, *args, **kwargs):

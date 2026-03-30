@@ -15,24 +15,33 @@ def dashboard(request):
     today = timezone.now().date()
     user_bookings = Booking.objects.filter(user=request.user).order_by("-created_at")[:10]
 
-    selected_arrival = None
-    selected_departure = None
     available_stands = Stand.objects.none()
+    selected_stand_id = None
+
+    stand_sections = [
+        ("Eskom", [1, 2]),
+        ("Owners A", [3]),
+        ("Boat Club", [4, 5, 6, 7]),
+        ("Owners B", [8, 9, 10, 11, 12, 13, 14]),
+        ("Public", [15, 16, 17, 18, 19, 20, 21]),
+        ("Owners C", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
+    ]
+
     booked_stands = []
+    available_stand_numbers = []
 
     if request.method == "POST":
         action = request.POST.get("action")
 
-        # STEP 1: Check availability
         if action == "check":
             temp_form = DashboardBookingForm(request.POST)
 
             if temp_form.is_valid():
-                selected_arrival = temp_form.cleaned_data["arrival_date"]
-                selected_departure = temp_form.cleaned_data["departure_date"]
+                arrival_date = temp_form.cleaned_data["arrival_date"]
+                departure_date = temp_form.cleaned_data["departure_date"]
 
-                arrival_dt = datetime.combine(selected_arrival, time(12, 0))
-                departure_dt = datetime.combine(selected_departure, time(12, 0))
+                arrival_dt = datetime.combine(arrival_date, time(12, 0))
+                departure_dt = datetime.combine(departure_date, time(12, 0))
 
                 if departure_dt <= arrival_dt:
                     messages.error(request, "Departure date must be after arrival date.")
@@ -51,36 +60,38 @@ def dashboard(request):
                         if bs.stand_id and bs.stand_id not in booked_stand_ids:
                             booked_stand_ids.add(bs.stand_id)
                             booked_stands.append({
+                                "id": bs.stand.id,
                                 "number": bs.stand.number,
                                 "name": bs.booking.user.get_full_name().strip() or bs.booking.user.email,
                             })
 
                     available_stands = Stand.objects.exclude(id__in=booked_stand_ids).order_by("number")
+                    available_stand_numbers = list(available_stands.values_list("number", flat=True))
                     booked_stands = sorted(booked_stands, key=lambda x: x["number"])
 
                     booking_form = DashboardBookingForm(
                         initial={
-                            "arrival_date": selected_arrival,
-                            "departure_date": selected_departure,
+                            "arrival_date": arrival_date,
+                            "departure_date": departure_date,
                         },
                         available_stands=available_stands,
                     )
             else:
                 booking_form = DashboardBookingForm(request.POST, available_stands=Stand.objects.none())
 
-        # STEP 2: Create booking
         elif action == "book":
-            selected_arrival_raw = request.POST.get("arrival_date")
-            selected_departure_raw = request.POST.get("departure_date")
-
             temp_form = DashboardBookingForm(request.POST)
 
-            if temp_form.is_valid():
-                selected_arrival = temp_form.cleaned_data["arrival_date"]
-                selected_departure = temp_form.cleaned_data["departure_date"]
+            arrival_date_raw = request.POST.get("arrival_date")
+            departure_date_raw = request.POST.get("departure_date")
+            selected_stand_id = request.POST.get("stand")
 
-                arrival_dt = datetime.combine(selected_arrival, time(12, 0))
-                departure_dt = datetime.combine(selected_departure, time(12, 0))
+            if temp_form.is_valid():
+                arrival_date = temp_form.cleaned_data["arrival_date"]
+                departure_date = temp_form.cleaned_data["departure_date"]
+
+                arrival_dt = datetime.combine(arrival_date, time(12, 0))
+                departure_dt = datetime.combine(departure_date, time(12, 0))
 
                 overlapping = BookingStand.objects.filter(
                     is_active=True,
@@ -95,11 +106,14 @@ def dashboard(request):
                     if bs.stand_id and bs.stand_id not in booked_stand_ids:
                         booked_stand_ids.add(bs.stand_id)
                         booked_stands.append({
+                            "id": bs.stand.id,
                             "number": bs.stand.number,
                             "name": bs.booking.user.get_full_name().strip() or bs.booking.user.email,
                         })
 
                 available_stands = Stand.objects.exclude(id__in=booked_stand_ids).order_by("number")
+                available_stand_numbers = list(available_stands.values_list("number", flat=True))
+                booked_stands = sorted(booked_stands, key=lambda x: x["number"])
 
                 booking_form = DashboardBookingForm(request.POST, available_stands=available_stands)
 
@@ -151,24 +165,24 @@ def dashboard(request):
         "today": today,
         "booking_form": booking_form,
         "bookings": user_bookings,
-        "available_stands": [stand.number for stand in available_stands],
         "booked_stands": booked_stands,
+        "available_stand_numbers": available_stand_numbers,
+        "selected_stand_id": int(selected_stand_id) if selected_stand_id else None,
+        "stand_sections": stand_sections,
     }
+
     return render(request, "dashboard.html", context)
 
+from django.http import HttpResponse
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
-from django.http import HttpResponse
-from stands.models import Stand
-from .models import BookingStand
 
 
 def stand_report_pdf(request):
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="stand_report.pdf"'
+    response = HttpResponse(content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="stand_report.pdf"'
 
     p = canvas.Canvas(response, pagesize=A4)
-
     y = 800
 
     stands = Stand.objects.all().order_by("number")
@@ -195,5 +209,3 @@ def stand_report_pdf(request):
 
     p.save()
     return response
-
-    
