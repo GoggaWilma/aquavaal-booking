@@ -112,21 +112,21 @@ def dashboard(request):
 
     return render(request, 'dashboard.html', context)
 
-from datetime import datetime
+from datetime import datetime, time
 
 from django.http import HttpResponse
-from django.utils.dateparse import parse_datetime, parse_date
 from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.dateparse import parse_date, parse_datetime
 
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.colors import black, white, HexColor
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
 
 from .models import BookingStand
 from stands.models import Stand
 
 
-def _parse_report_date(value, end_of_day=False):
+def _parse_report_datetime(value, is_end=False):
     if not value:
         return None
 
@@ -136,79 +136,86 @@ def _parse_report_date(value, end_of_day=False):
 
     d = parse_date(value)
     if d:
-        if end_of_day:
-            return datetime.combine(d, datetime.max.time().replace(microsecond=0))
-        return datetime.combine(d, datetime.min.time())
+        return datetime.combine(d, time.max if is_end else time.min)
 
     return None
 
 
 @staff_member_required
 def stand_report_pdf(request):
-    arrival = _parse_report_date(request.GET.get("arrival"))
-    departure = _parse_report_date(request.GET.get("departure"), end_of_day=True)
+    arrival = _parse_report_datetime(request.GET.get("arrival"))
+    departure = _parse_report_datetime(request.GET.get("departure"), is_end=True)
 
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="stand_report.pdf"'
+    response["Content-Disposition"] = 'attachment; filename="stand_layout_report.pdf"'
 
-    p = canvas.Canvas(response, pagesize=A4)
-    width, height = A4
+    p = canvas.Canvas(response, pagesize=landscape(A4))
+    page_width, page_height = landscape(A4)
 
     # Colors
     title_color = HexColor("#1F4E79")
     booked_color = HexColor("#C0392B")
     available_color = HexColor("#2E8B57")
-    light_gray = HexColor("#F4F6F7")
     border_color = HexColor("#D5D8DC")
+    box_bg = HexColor("#F8F9F9")
+    muted_text = HexColor("#566573")
 
     # Header
-    p.setTitle("Aqua Vaal Stand Report")
-    p.setFont("Helvetica-Bold", 18)
+    p.setTitle("Aqua Vaal Stand Layout")
+    p.setFont("Helvetica-Bold", 20)
     p.setFillColor(title_color)
-    p.drawString(40, height - 40, "Aqua Vaal Stand Availability Report")
+    p.drawString(30, page_height - 30, "Aqua Vaal Stand Layout")
 
     p.setFont("Helvetica", 10)
     p.setFillColor(black)
-
     if arrival and departure:
-        p.drawString(
-            40,
-            height - 60,
-            f"Period: {arrival.strftime('%Y-%m-%d %H:%M')} to {departure.strftime('%Y-%m-%d %H:%M')}"
+        period_text = (
+            f"Period: {arrival.strftime('%d %b %Y %H:%M')} "
+            f"to {departure.strftime('%d %b %Y %H:%M')}"
         )
+    elif arrival:
+        period_text = f"From: {arrival.strftime('%d %b %Y %H:%M')}"
+    elif departure:
+        period_text = f"Until: {departure.strftime('%d %b %Y %H:%M')}"
     else:
-        p.drawString(
-            40,
-            height - 60,
-            "Period: All active bookings considered"
-        )
+        period_text = "Period: All active bookings"
+
+    p.drawString(30, page_height - 48, period_text)
 
     # Legend
+    legend_y = page_height - 72
     p.setFont("Helvetica-Bold", 10)
-    p.drawString(40, height - 85, "Legend:")
-    p.setFillColor(available_color)
-    p.rect(90, height - 92, 12, 12, fill=1, stroke=0)
     p.setFillColor(black)
-    p.drawString(108, height - 90, "Available")
+    p.drawString(30, legend_y, "Legend:")
+
+    p.setFillColor(available_color)
+    p.rect(75, legend_y - 8, 12, 12, fill=1, stroke=0)
+    p.setFillColor(black)
+    p.setFont("Helvetica", 10)
+    p.drawString(92, legend_y - 6, "Available")
 
     p.setFillColor(booked_color)
-    p.rect(175, height - 92, 12, 12, fill=1, stroke=0)
+    p.rect(160, legend_y - 8, 12, 12, fill=1, stroke=0)
     p.setFillColor(black)
-    p.drawString(193, height - 90, "Booked")
+    p.drawString(177, legend_y - 6, "Booked")
 
-    # Layout settings
     stands = Stand.objects.all().order_by("number")
-    cols = 3
-    box_width = 165
-    box_height = 60
+
+    # Grid layout
+    cols = 4
+    margin_x = 30
+    margin_y_top = 100
+    margin_y_bottom = 30
     gap_x = 12
     gap_y = 14
-    start_x = 40
-    start_y = height - 130
 
-    x = start_x
-    y = start_y
-    col_index = 0
+    usable_width = page_width - (margin_x * 2)
+    box_width = (usable_width - (gap_x * (cols - 1))) / cols
+    box_height = 78
+
+    x = margin_x
+    y = page_height - margin_y_top
+    col = 0
 
     for stand in stands:
         qs = BookingStand.objects.filter(
@@ -221,101 +228,100 @@ def stand_report_pdf(request):
                 booking__arrival_datetime__lt=departure,
                 booking__departure_datetime__gt=arrival,
             )
+        elif arrival:
+            qs = qs.filter(booking__departure_datetime__gt=arrival)
+        elif departure:
+            qs = qs.filter(booking__arrival_datetime__lt=departure)
 
-        booking_stand = qs.first()
+        booking_stand = qs.order_by("booking__arrival_datetime").first()
 
         is_booked = booking_stand is not None
-        box_color = booked_color if is_booked else available_color
+        status_color = booked_color if is_booked else available_color
         status_text = "BOOKED" if is_booked else "AVAILABLE"
 
-        # Box background
-        p.setFillColor(light_gray)
+        # Outer box
+        p.setFillColor(box_bg)
         p.setStrokeColor(border_color)
         p.roundRect(x, y - box_height, box_width, box_height, 8, fill=1, stroke=1)
 
-        # Status pill
-        p.setFillColor(box_color)
-        p.roundRect(x + 8, y - 22, 58, 16, 6, fill=1, stroke=0)
-
+        # Status banner
+        p.setFillColor(status_color)
+        p.roundRect(x + 8, y - 22, 68, 16, 4, fill=1, stroke=0)
         p.setFillColor(white)
         p.setFont("Helvetica-Bold", 8)
-        p.drawString(x + 16, y - 17, status_text)
+        p.drawString(x + 17, y - 17, status_text)
 
         # Stand title
         p.setFillColor(title_color)
         p.setFont("Helvetica-Bold", 12)
-        p.drawString(x + 78, y - 18, f"Stand {stand.number}")
+        p.drawString(x + 84, y - 17, f"Stand {stand.number}")
 
-        # Occupant / details
+        # Details
         p.setFillColor(black)
         p.setFont("Helvetica", 9)
 
         if is_booked:
             booking = booking_stand.booking
-            guest_name = ""
             if booking.user:
                 guest_name = booking.user.get_full_name().strip() or booking.user.email
+            else:
+                guest_name = "Guest assigned"
 
-            line_1 = f"Guest: {guest_name}" if guest_name else "Guest: Assigned"
-            line_2 = f"Stay: {booking.arrival_datetime.strftime('%d %b')} - {booking.departure_datetime.strftime('%d %b')}"
+            guest_line = f"Name: {guest_name}"
+            date_line = (
+                f"{booking.arrival_datetime.strftime('%d %b')} - "
+                f"{booking.departure_datetime.strftime('%d %b')}"
+            )
         else:
-            line_1 = "Guest: -"
-            line_2 = "Ready to book"
+            guest_line = "Name: -"
+            date_line = "Ready to book"
 
-        p.drawString(x + 10, y - 38, line_1[:32])
-        p.drawString(x + 10, y - 50, line_2[:32])
+        # Clip long names a bit
+        if len(guest_line) > 32:
+            guest_line = guest_line[:29] + "..."
 
-        # Move to next cell
-        col_index += 1
-        if col_index == cols:
-            col_index = 0
-            x = start_x
+        p.drawString(x + 10, y - 40, guest_line)
+        p.setFillColor(muted_text)
+        p.drawString(x + 10, y - 54, date_line)
+
+        # Next box position
+        col += 1
+        if col == cols:
+            col = 0
+            x = margin_x
             y -= (box_height + gap_y)
         else:
             x += (box_width + gap_x)
 
-        # New page if needed
-        if y < 80:
+        # New page
+        if y - box_height < margin_y_bottom:
             p.showPage()
-            x = start_x
-            y = height - 50
-            col_index = 0
+            page_width, page_height = landscape(A4)
 
-    p.save()
-    return response
+            # Reset header on new page
+            p.setFont("Helvetica-Bold", 20)
+            p.setFillColor(title_color)
+            p.drawString(30, page_height - 30, "Aqua Vaal Stand Layout")
 
-from django.http import HttpResponse
-from django.contrib.admin.views.decorators import staff_member_required
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
+            p.setFont("Helvetica", 10)
+            p.setFillColor(black)
+            p.drawString(30, page_height - 48, period_text)
 
-from .models import BookingStand
-from stands.models import Stand
+            p.setFont("Helvetica-Bold", 10)
+            p.drawString(30, page_height - 72, "Legend:")
+            p.setFillColor(available_color)
+            p.rect(75, page_height - 80, 12, 12, fill=1, stroke=0)
+            p.setFillColor(black)
+            p.setFont("Helvetica", 10)
+            p.drawString(92, page_height - 78, "Available")
+            p.setFillColor(booked_color)
+            p.rect(160, page_height - 80, 12, 12, fill=1, stroke=0)
+            p.setFillColor(black)
+            p.drawString(177, page_height - 78, "Booked")
 
-
-@staff_member_required
-def stand_report_pdf(request):
-    response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="stand_report.pdf"'
-
-    p = canvas.Canvas(response, pagesize=A4)
-    y = 800
-
-    stands = Stand.objects.all().order_by("number")
-
-    for stand in stands:
-        booked = BookingStand.objects.filter(
-            stand=stand,
-            is_active=True
-        ).exists()
-
-        status = "BOOKED" if booked else "AVAILABLE"
-        p.drawString(100, y, f"Stand {stand.number} - {status}")
-
-        y -= 20
-        if y < 50:
-            p.showPage()
-            y = 800
+            x = margin_x
+            y = page_height - margin_y_top
+            col = 0
 
     p.save()
     return response
