@@ -12,7 +12,7 @@ from django.shortcuts import render, redirect
 from stands.models import Stand
 from .models import Booking, BookingStand
 from .forms import DashboardBookingForm
-
+from django.http import HttpResponse
 
 @login_required
 def dashboard(request):
