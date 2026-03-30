@@ -154,7 +154,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Aqua Vaal Dashboard</h1>
+        <h1>Aqua Vaal Hengelklub Dashboard</h1>
         <p class="subtext">Choose dates, check availability, click a stand, then create your booking.</p>
 
         {% if messages %}
@@ -166,123 +166,84 @@
             {% endfor %}
         </div>
         {% endif %}
+ 
+    <div class="section">
+        <h2>Create Booking</h2>
 
-        <div class="section">
-            <h2>Create Booking</h2>
+        <form method="get">
+            <div class="form-row">
+                <label for="id_arrival_date">Arrival Date</label><br>
+                <input type="date" name="arrival_date" id="id_arrival_date" value="{{ arrival_date }}" required>
+            </div>
+
+            <div class="form-row">
+                <label for="id_departure_date">Departure Date</label><br>
+                <input type="date" name="departure_date" id="id_departure_date" value="{{ departure_date }}" required>
+            </div>
+
+            <div class="button-row">
+                <button type="submit">Check Availability</button>
+                <a href="/report/stands/" class="button secondary" style="margin-left:10px;">View Stand Layout PDF</a>
+            </div>
+        </form>
+
+        {% if available_stand_numbers or booked_stands %}
+            <hr style="margin: 25px 0;">
+            <h3>Select a Stand</h3>
+            <p class="muted">Green stands are available. Red stands are already booked.</p>
 
             <form method="post" id="booking-form">
                 {% csrf_token %}
+                <input type="hidden" name="arrival_date" value="{{ arrival_date }}">
+                <input type="hidden" name="departure_date" value="{{ departure_date }}">
+                <input type="hidden" name="stand" id="selected-stand-id">
 
-                <div class="form-row">
-                    <label for="{{ booking_form.arrival_date.id_for_label }}">Arrival Date</label><br>
-                    {{ booking_form.arrival_date }}
-                </div>
-
-                <div class="form-row">
-                    <label for="{{ booking_form.departure_date.id_for_label }}">Departure Date</label><br>
-                    {{ booking_form.departure_date }}
-                </div>
-
-                {{ booking_form.stand }}
-
-                <div class="button-row">
-                    <button type="submit" name="action" value="check">Check Availability</button>
-                    <a href="/report/stands/" class="button secondary" style="margin-left:10px;">View Stand Layout PDF</a>
-                </div>
-
-                {% if available_stand_numbers or booked_stands %}
-                    <hr style="margin: 25px 0;">
-                    <h3>Select a Stand</h3>
-                    <p class="muted">Green stands are available. Red stands are already booked.</p>
-
-                    {% for section_name, stand_numbers in stand_sections %}
-                        <div style="margin-bottom: 20px;">
-                            <h3>{{ section_name }}</h3>
-                            <div class="stand-grid">
-                                {% for number in stand_numbers %}
-                                    {% with booked=None %}
-                                        {% for stand in booked_stands %}
-                                            {% if stand.number == number %}
-                                                <div class="stand-tile stand-booked">
-                                                    Stand {{ number }}
-                                                    <span class="stand-name">{{ stand.name }}</span>
-                                                </div>
-                                            {% endif %}
-                                        {% endfor %}
-
-                                        {% if number in available_stand_numbers %}
-                                            <div
-                                                class="stand-tile stand-available {% if selected_stand_id and booking_form.stand.value|stringformat:'s' == '' %}{% endif %}"
-                                                data-stand-number="{{ number }}"
-                                                onclick="selectStandByNumber({{ number }})"
-                                            >
+                {% for section_name, stand_numbers in stand_sections %}
+                    <div style="margin-bottom: 20px;">
+                        <h3>{{ section_name }}</h3>
+                        <div class="stand-grid">
+                            {% for number in stand_numbers %}
+                                {% with is_booked=False %}
+                                    {% for stand in booked_stands %}
+                                        {% if stand.number == number %}
+                                            <div class="stand-tile stand-booked">
                                                 Stand {{ number }}
+                                                <span class="stand-name">{{ stand.name }}</span>
                                             </div>
                                         {% endif %}
-                                    {% endwith %}
-                                {% endfor %}
-                            </div>
+                                    {% endfor %}
+
+                                    {% if number in available_stand_numbers %}
+                                        <div
+                                            class="stand-tile stand-available"
+                                            data-stand-number="{{ number }}"
+                                            onclick="selectStandByNumber({{ number }})"
+                                        >
+                                            Stand {{ number }}
+                                        </div>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endfor %}
                         </div>
-                    {% endfor %}
-
-                    <div class="button-row">
-                        <button type="submit" name="action" value="book">Create Booking</button>
                     </div>
-                {% endif %}
+                {% endfor %}
+
+                <div class="button-row">
+                    <button type="submit">Create Booking</button>
+                </div>
             </form>
-        </div>
-
-        <div class="two-col">
-            <div class="section">
-                <h2>Available Stand Numbers</h2>
-                {% if available_stand_numbers %}
-                    <p>{{ available_stand_numbers|join:", " }}</p>
-                {% else %}
-                    <p>No available stands loaded yet.</p>
-                {% endif %}
-            </div>
-
-            <div class="section">
-                <h2>Booked Stands</h2>
-                {% if booked_stands %}
-                    <ul>
-                        {% for stand in booked_stands %}
-                            <li>Stand {{ stand.number }} - {{ stand.name }}</li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No booked stands loaded yet.</p>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="section">
-            <h2>My Bookings</h2>
-            {% if bookings %}
-                <ul>
-                    {% for booking in bookings %}
-                        <li>
-                            Booking {{ booking.id }} |
-                            {{ booking.arrival_datetime|date:"d M Y H:i" }} to
-                            {{ booking.departure_datetime|date:"d M Y H:i" }} |
-                            {{ booking.status }}
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p>No bookings yet.</p>
-            {% endif %}
-        </div>
+        {% endif %}
     </div>
 
     <script>
+        const standMap = {
+            {% for stand in booking_form.fields.stand.queryset %}
+                {{ stand.number }}: {{ stand.id }},
+            {% endfor %}
+        };
+
         function selectStandByNumber(standNumber) {
-            const hiddenField = document.getElementById("id_stand");
-            const standMap = {
-                {% for number in available_stand_numbers %}
-                    {{ number }}: {% for stand in booking_form.fields.stand.queryset %}{% if stand.number == number %}{{ stand.id }}{% endif %}{% endfor %},
-                {% endfor %}
-            };
+            const hiddenField = document.getElementById("selected-stand-id");
 
             if (standMap[standNumber]) {
                 hiddenField.value = standMap[standNumber];
@@ -292,15 +253,10 @@
                 tile.classList.remove("stand-selected");
             });
 
-            const tiles = document.querySelectorAll(".stand-available");
-            tiles.forEach(tile => {
+            document.querySelectorAll(".stand-available").forEach(tile => {
                 if (parseInt(tile.dataset.standNumber) === standNumber) {
                     tile.classList.add("stand-selected");
                 }
             });
         }
     </script>
-</body>
-</html>
-
-
