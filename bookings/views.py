@@ -101,11 +101,8 @@ from django.utils import timezone
 from .models import Booking
 
 def dashboard(request):
-    return render(request, 'dashboard.html')
-    
     today = timezone.now().date()
-
-    todays_bookings = Booking.objects.filter(date=today)
+    todays_bookings = Booking.objects.filter(arrival_datetime__date=today)
 
     context = {
         'today': today,
