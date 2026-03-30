@@ -46,8 +46,10 @@ def dashboard(request):
             arrival_date = booking_form.cleaned_data["arrival_date"]
             departure_date = booking_form.cleaned_data["departure_date"]
 
-            arrival_dt = datetime.combine(arrival_date, time(12, 0))
-            departure_dt = datetime.combine(departure_date, time(12, 0))
+            from django.utils import timezone
+
+            arrival_dt = timezone.make_aware(datetime.combine(arrival_date, time(12, 0)))
+            departure_dt = timezone.make_aware(datetime.combine(departure_date, time(12, 0)))
 
             if departure_dt <= arrival_dt:
                 messages.error(request, "Departure date must be after arrival date.")
@@ -102,8 +104,8 @@ def dashboard(request):
             departure_date = temp_form.cleaned_data["departure_date"]
             stand = temp_form.cleaned_data["stand"]
 
-            arrival_dt = datetime.combine(arrival_date, time(12, 0))
-            departure_dt = datetime.combine(departure_date, time(12, 0))
+            arrival_dt = timezone.make_aware(datetime.combine(arrival_date, time(12, 0)))
+            departure_dt = timezone.make_aware(datetime.combine(departure_date, time(12, 0)))
 
             overlap = BookingStand.objects.filter(
                 stand=stand,
