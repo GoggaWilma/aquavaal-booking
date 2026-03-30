@@ -154,6 +154,7 @@ def dashboard(request):
         "available_stands": [stand.number for stand in available_stands],
         "booked_stands": booked_stands,
     }
+    return render(request, "dashboard.html", context)
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -195,4 +196,4 @@ def stand_report_pdf(request):
     p.save()
     return response
 
-    return render(request, "dashboard.html", context)
+    
