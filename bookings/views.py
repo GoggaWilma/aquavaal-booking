@@ -115,7 +115,7 @@ def dashboard(request):
 
     return render(request, 'dashboard.html', context)
 
-from datetime import datetime, time
+    from datetime import datetime, time
 
 from django.http import HttpResponse
 from django.contrib.admin.views.decorators import staff_member_required
@@ -161,178 +161,205 @@ def stand_report_pdf(request):
     available_color = HexColor("#2E8B57")
     border_color = HexColor("#D5D8DC")
     box_bg = HexColor("#F8F9F9")
+    section_color = HexColor("#154360")
     muted_text = HexColor("#566573")
 
-    # Header
-    p.setTitle("Aqua Vaal Stand Layout")
-    p.setFont("Helvetica-Bold", 20)
-    p.setFillColor(title_color)
-    p.drawString(30, page_height - 30, "Aqua Vaal Stand Layout")
+    # Real layout sections
+    layout_sections = [
+        ("Eskom", [1, 2]),
+        ("Owners A", [3]),
+        ("Boat Club", [4, 5, 6, 7]),
+        ("Owners B", [8, 9, 10, 11, 12, 13, 14]),
+        ("Public", [15, 16, 17, 18, 19, 20, 21]),
+        ("Owners C", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
+    ]
 
-    p.setFont("Helvetica", 10)
-    p.setFillColor(black)
-    if arrival and departure:
-        period_text = (
-            f"Period: {arrival.strftime('%d %b %Y %H:%M')} "
-            f"to {departure.strftime('%d %b %Y %H:%M')}"
-        )
-    elif arrival:
-        period_text = f"From: {arrival.strftime('%d %b %Y %H:%M')}"
-    elif departure:
-        period_text = f"Until: {departure.strftime('%d %b %Y %H:%M')}"
-    else:
-        period_text = "Period: All active bookings"
-
-    p.drawString(30, page_height - 48, period_text)
-
-    # Legend
-    legend_y = page_height - 72
-    p.setFont("Helvetica-Bold", 10)
-    p.setFillColor(black)
-    p.drawString(30, legend_y, "Legend:")
-
-    p.setFillColor(available_color)
-    p.rect(75, legend_y - 8, 12, 12, fill=1, stroke=0)
-    p.setFillColor(black)
-    p.setFont("Helvetica", 10)
-    p.drawString(92, legend_y - 6, "Available")
-
-    p.setFillColor(booked_color)
-    p.rect(160, legend_y - 8, 12, 12, fill=1, stroke=0)
-    p.setFillColor(black)
-    p.drawString(177, legend_y - 6, "Booked")
-
+    # Load stands once
     stands = Stand.objects.all().order_by("number")
+    stand_lookup = {stand.number: stand for stand in stands}
 
-    # Grid layout
-    cols = 4
-    margin_x = 30
-    margin_y_top = 100
-    margin_y_bottom = 30
-    gap_x = 12
-    gap_y = 14
-
-    usable_width = page_width - (margin_x * 2)
-    box_width = (usable_width - (gap_x * (cols - 1))) / cols
-    box_height = 78
-
-    x = margin_x
-    y = page_height - margin_y_top
-    col = 0
-
+    # Load bookings once
     booking_stands = BookingStand.objects.filter(
         is_active=True
     ).select_related("booking", "booking__user", "stand")
 
-    # Apply date filter once
     if arrival and departure:
         booking_stands = booking_stands.filter(
             booking__arrival_datetime__lt=departure,
             booking__departure_datetime__gt=arrival,
-    )
+        )
+    elif arrival:
+        booking_stands = booking_stands.filter(
+            booking__departure_datetime__gt=arrival
+        )
+    elif departure:
+        booking_stands = booking_stands.filter(
+            booking__arrival_datetime__lt=departure
+        )
 
-    # Build lookup
-    stand_map = {}
+    # Map stand_id -> bookingstand
+    stand_booking_map = {}
     for bs in booking_stands:
-        if bs.stand_id not in stand_map:
-            stand_map[bs.stand_id] = bs
-    
-        elif arrival:
-            qs = qs.filter(booking__departure_datetime__gt=arrival)
-        elif departure:
-            qs = qs.filter(booking__arrival_datetime__lt=departure)
+        if bs.stand_id and bs.stand_id not in stand_booking_map:
+            stand_booking_map[bs.stand_id] = bs
 
-        booking_stand = stand_map.get(stand.id)
+    def draw_header():
+        p.setTitle("Aqua Vaal Stand Layout")
+        p.setFont("Helvetica-Bold", 20)
+        p.setFillColor(title_color)
+        p.drawString(25, page_height - 28, "Aqua Vaal Stand Layout")
+
+        p.setFont("Helvetica", 10)
+        p.setFillColor(black)
+
+        if arrival and departure:
+            period_text = (
+                f"Period: {arrival.strftime('%d %b %Y %H:%M')} "
+                f"to {departure.strftime('%d %b %Y %H:%M')}"
+            )
+        elif arrival:
+            period_text = f"From: {arrival.strftime('%d %b %Y %H:%M')}"
+        elif departure:
+            period_text = f"Until: {departure.strftime('%d %b %Y %H:%M')}"
+        else:
+            period_text = "Period: All active bookings"
+
+        p.drawString(25, page_height - 45, period_text)
+
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(25, page_height - 65, "Legend:")
+
+        p.setFillColor(available_color)
+        p.rect(72, page_height - 72, 12, 12, fill=1, stroke=0)
+        p.setFillColor(black)
+        p.setFont("Helvetica", 10)
+        p.drawString(90, page_height - 70, "Available")
+
+        p.setFillColor(booked_color)
+        p.rect(160, page_height - 72, 12, 12, fill=1, stroke=0)
+        p.setFillColor(black)
+        p.drawString(178, page_height - 70, "Booked")
+
+        p.setFont("Helvetica-Oblique", 9)
+        p.setFillColor(muted_text)
+        p.drawString(260, page_height - 70, "Left to right: Stand 1 to Stand 40 along the river")
+
+    def draw_stand_box(x, y, width, height, stand_number):
+        stand = stand_lookup.get(stand_number)
+
+        if stand:
+            booking_stand = stand_booking_map.get(stand.id)
+        else:
+            booking_stand = None
 
         is_booked = booking_stand is not None
         status_color = booked_color if is_booked else available_color
         status_text = "BOOKED" if is_booked else "AVAILABLE"
 
-        # Outer box
         p.setFillColor(box_bg)
         p.setStrokeColor(border_color)
-        p.roundRect(x, y - box_height, box_width, box_height, 8, fill=1, stroke=1)
+        p.roundRect(x, y - height, width, height, 6, fill=1, stroke=1)
 
-        # Status banner
         p.setFillColor(status_color)
-        p.roundRect(x + 8, y - 22, 68, 16, 4, fill=1, stroke=0)
+        p.roundRect(x + 6, y - 20, 56, 14, 4, fill=1, stroke=0)
+
         p.setFillColor(white)
-        p.setFont("Helvetica-Bold", 8)
-        p.drawString(x + 17, y - 17, status_text)
+        p.setFont("Helvetica-Bold", 7)
+        p.drawString(x + 12, y - 15, status_text)
 
-        # Stand title
         p.setFillColor(title_color)
-        p.setFont("Helvetica-Bold", 12)
-        p.drawString(x + 84, y - 17, f"Stand {stand.number}")
+        p.setFont("Helvetica-Bold", 10)
+        p.drawString(x + 68, y - 15, f"Stand {stand_number}")
 
-        # Details
         p.setFillColor(black)
-        p.setFont("Helvetica", 9)
+        p.setFont("Helvetica", 7)
 
         if is_booked:
             booking = booking_stand.booking
+            guest_name = "-"
             if booking.user:
-                guest_name = booking.user.get_full_name().strip() or booking.user.email
-            else:
-                guest_name = "Guest assigned"
+                guest_name = booking.user.get_full_name().strip() or booking.user.email or "-"
 
-            guest_line = f"Name: {guest_name}"
-            date_line = (
+            if len(guest_name) > 20:
+                guest_name = guest_name[:17] + "..."
+
+            date_text = (
                 f"{booking.arrival_datetime.strftime('%d %b')} - "
                 f"{booking.departure_datetime.strftime('%d %b')}"
             )
         else:
-            guest_line = "Name: -"
-            date_line = "Ready to book"
+            guest_name = "-"
+            date_text = "Ready to book"
 
-        # Clip long names a bit
-        if len(guest_line) > 32:
-            guest_line = guest_line[:29] + "..."
-
-        p.drawString(x + 10, y - 40, guest_line)
+        p.drawString(x + 8, y - 34, guest_name)
         p.setFillColor(muted_text)
-        p.drawString(x + 10, y - 54, date_line)
+        p.drawString(x + 8, y - 46, date_text)
 
-        # Next box position
-        col += 1
-        if col == cols:
-            col = 0
-            x = margin_x
-            y -= (box_height + gap_y)
-        else:
-            x += (box_width + gap_x)
+    draw_header()
 
-        # New page
-        if y - box_height < margin_y_bottom:
+    # Layout measurements
+    left_margin = 25
+    right_margin = 25
+    top_y = page_height - 95
+    bottom_margin = 25
+    section_gap = 16
+    row_gap = 8
+
+    box_height = 52
+    usable_width = page_width - left_margin - right_margin
+    max_cols = 7
+    box_gap = 6
+    box_width = (usable_width - (box_gap * (max_cols - 1))) / max_cols
+
+    current_y = top_y
+
+    for section_name, stand_numbers in layout_sections:
+        needed_height = 20 + box_height + section_gap
+
+        if current_y - needed_height < bottom_margin:
             p.showPage()
-            page_width, page_height = landscape(A4)
+            draw_header()
+            current_y = top_y
 
-            # Reset header on new page
-            p.setFont("Helvetica-Bold", 20)
-            p.setFillColor(title_color)
-            p.drawString(30, page_height - 30, "Aqua Vaal Stand Layout")
+        # Section title
+        p.setFillColor(section_color)
+        p.setFont("Helvetica-Bold", 12)
+        p.drawString(left_margin, current_y, section_name)
 
-            p.setFont("Helvetica", 10)
-            p.setFillColor(black)
-            p.drawString(30, page_height - 48, period_text)
+        current_y -= 10
 
-            p.setFont("Helvetica-Bold", 10)
-            p.drawString(30, page_height - 72, "Legend:")
-            p.setFillColor(available_color)
-            p.rect(75, page_height - 80, 12, 12, fill=1, stroke=0)
-            p.setFillColor(black)
-            p.setFont("Helvetica", 10)
-            p.drawString(92, page_height - 78, "Available")
-            p.setFillColor(booked_color)
-            p.rect(160, page_height - 80, 12, 12, fill=1, stroke=0)
-            p.setFillColor(black)
-            p.drawString(177, page_height - 78, "Booked")
+        # Draw row(s) for this section
+        x = left_margin
+        col = 0
+        row_top_y = current_y - 6
 
-            x = margin_x
-            y = page_height - margin_y_top
-            col = 0
+        for index, stand_number in enumerate(stand_numbers):
+            draw_stand_box(x, row_top_y, box_width, box_height, stand_number)
+
+            col += 1
+            if col == max_cols and index != len(stand_numbers) - 1:
+                col = 0
+                x = left_margin
+                row_top_y -= (box_height + row_gap)
+
+                if row_top_y - box_height < bottom_margin:
+                    p.showPage()
+                    draw_header()
+                    current_y = top_y
+                    p.setFillColor(section_color)
+                    p.setFont("Helvetica-Bold", 12)
+                    p.drawString(left_margin, current_y, f"{section_name} (continued)")
+                    current_y -= 10
+                    row_top_y = current_y - 6
+            else:
+                x += (box_width + box_gap)
+
+        # Move current_y below the section
+        rows_used = ((len(stand_numbers) - 1) // max_cols) + 1
+        current_y = current_y - (rows_used * (box_height + row_gap)) - section_gap
 
     p.save()
-    return response
+    return response    
 
+          
     print("PDF generated in:", time.time() - start)

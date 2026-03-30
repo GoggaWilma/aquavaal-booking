@@ -28,3 +28,24 @@
 ">
 📄 Download Stand Report
 </a>
+
+<h2>Stand Layout PDF</h2>
+
+<form action="/report/stands/" method="get" style="margin-top:20px;">
+    <label for="arrival">Arrival:</label>
+    <input type="date" name="arrival" id="arrival" required>
+
+    <label for="departure" style="margin-left:10px;">Departure:</label>
+    <input type="date" name="departure" id="departure" required>
+
+    <button type="submit" style="
+        padding:10px 16px;
+        background:#2f6f8f;
+        color:white;
+        border:none;
+        border-radius:6px;
+        margin-left:10px;
+    ">
+        Generate Stand Layout PDF
+    </button>
+</form>
