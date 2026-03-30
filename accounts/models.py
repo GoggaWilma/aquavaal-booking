@@ -61,6 +61,9 @@ class Profile(models.Model):
         ("GUEST", "Guest"),
         ("UNPAID", "Unpaid Member"), 
         ("EXPIRED", "Expired Member"),
+        ("ESKOM MEMBER", "Eskom Member"),
+        ("UNPAID ESKOM", "Unpaid Eskom Member"),
+        ("BOAT CLUB MEMBER", "Boat Club Member"),
     ]
 
     GENDER_CHOICES = [
@@ -119,6 +122,13 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.email} Profile"
+
+    def is_guest(self):
+        return self.membership_type == "GUEST"
+
+
+    def is_billable_as_member(self):
+        return self.is_active_member()
 
 
 

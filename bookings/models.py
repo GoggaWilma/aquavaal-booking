@@ -51,16 +51,42 @@ class Booking(models.Model):
     def is_locked(self):
         return self.attendance_status == "FINAL"
 
+    def user_profile(self):
+        return getattr(self.user, "profile", None)
+
+    def booking_user_is_active_member(self):
+        profile = self.user_profile()
+        if not profile:
+            return False
+        return profile.is_active_member()
+
+    def booking_user_membership_type(self):
+        profile = self.user_profile()
+        if not profile:
+            return "GUEST"
+        return profile.membership_type
+
+    def clean(self):
+        if self.departure_datetime <= self.arrival_datetime:
+            raise ValidationError("Departure must be after arrival.")
+
     def recalculate_financials(self):
         DAY_RATE = 80
         NIGHT_RATE = 40
 
-        payable_adults = self.non_member_adult_count
+        # Guests are always billable
+        payable_guests = self.non_member_adult_count
 
-        total = payable_adults * (
+        # If the booking owner is NOT an active member, count them as billable too
+        if not self.booking_user_is_active_member():
+            payable_guests += 1
+
+        total_per_person = (
             self.total_days * DAY_RATE +
             self.total_nights * NIGHT_RATE
         )
+
+        total = payable_guests * total_per_person
 
         self.calculated_amount = total
         self.save(update_fields=["calculated_amount"])
@@ -71,13 +97,14 @@ class Booking(models.Model):
             self.save(update_fields=["approved_amount"])
 
     def save(self, *args, **kwargs):
+        self.full_clean()
         super().save(*args, **kwargs)
 
         if self.attendance_status == "FINAL" and self.approved_amount is None:
             self.approved_amount = self.calculated_amount
             super().save(update_fields=["approved_amount"])
 
-# -------------------------
+#--------------------------
 # BOOKING STAND MODEL
 # -------------------------
 
@@ -116,9 +143,10 @@ class BookingStand(models.Model):
         stand_label = self.stand.number if self.stand else "No Stand"
         return f"Stand {stand_label} - {self.approval_status}"
 
-    from django.core.exceptions import ValidationError
-
     def clean(self):
+        if not self.stand or not self.booking:
+            return
+
         overlapping = BookingStand.objects.filter(
             stand=self.stand,
             booking__arrival_datetime__lt=self.booking.departure_datetime,

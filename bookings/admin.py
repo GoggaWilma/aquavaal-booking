@@ -21,6 +21,7 @@ class BookingAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "user",
+        "user_membership_status",
         "booking_mode",
         "payment_status",
         "attendance_status",
@@ -50,3 +51,13 @@ class BookingAdmin(admin.ModelAdmin):
 
     list_filter = ("booking_mode", "status")
     inlines = [BookingStandInline]
+
+    def user_membership_status(self, obj):
+        profile = getattr(obj.user, "profile", None)
+        if not profile:
+            return "No Profile"
+        if profile.is_active_member():
+            return "Active Member"
+        return profile.membership_type
+
+    user_membership_status.short_description = "Membership"
