@@ -58,8 +58,24 @@ class Booking(models.Model):
 
     def display_name(self):
         if self.user:
-            return self.user.get_full_name().strip() or self.user.email
+            profile = getattr(self.user, "profile", None)
+
+            if profile:
+                call_name = (profile.call_name or "").strip()
+                surname = (profile.surname or "").strip()
+
+                full_profile_name = f"{call_name} {surname}".strip()
+                if full_profile_name:
+                    return full_profile_name
+
+            full_name = self.user.get_full_name().strip()
+            if full_name:
+                return full_name
+
+            return self.user.email
+
         return self.guest_name or "Guest"
+    
 
     def is_locked(self):
         return self.attendance_status == "FINAL"
