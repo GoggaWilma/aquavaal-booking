@@ -7,7 +7,7 @@ from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
 
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 
 from stands.models import Stand
 from .models import Booking, BookingStand
@@ -154,8 +154,8 @@ def stand_report_pdf(request):
     response = HttpResponse(content_type="application/pdf")
     response["Content-Disposition"] = 'attachment; filename="stand_layout_report.pdf"'
 
-    p = canvas.Canvas(response, pagesize=landscape(A4))
-    page_width, page_height = landscape(A4)
+    p = canvas.Canvas(response, pagesize=A4)
+    page_width, page_height = A4
 
     # Colors
     title_color = HexColor("#1F4E79")
@@ -179,9 +179,15 @@ def stand_report_pdf(request):
     stands = Stand.objects.all().order_by("number")
     stand_lookup = {stand.number: stand for stand in stands}
 
+    # Exclude bookings that ended before yesterday
+    yesterday = timezone.localdate() - timedelta(days=1)
+
     booking_stands = BookingStand.objects.filter(
-        is_active=True
-    ).select_related("booking", "booking__user", "stand")
+        is_active=True,
+        booking__departure_datetime__date__gte=yesterday,
+    ).select_related("booking", "booking__user", "stand").order_by(
+        "booking__arrival_datetime"
+    )
 
     stand_booking_map = {}
     for bs in booking_stands:
@@ -190,13 +196,13 @@ def stand_report_pdf(request):
 
     def draw_header():
         p.setTitle("Aqua Vaal Stand Layout")
-        p.setFont("Helvetica-Bold", 20)
+        p.setFont("Helvetica-Bold", 18)
         p.setFillColor(title_color)
         p.drawString(25, page_height - 28, "Aqua Vaal Stand Layout")
 
         p.setFont("Helvetica", 10)
         p.setFillColor(black)
-        p.drawString(25, page_height - 45, "Live grouped stand layout")
+        p.drawString(25, page_height - 45, "Current and upcoming stand bookings")
 
         p.setFont("Helvetica-Bold", 10)
         p.drawString(25, page_height - 65, "Legend:")
@@ -214,13 +220,13 @@ def stand_report_pdf(request):
 
         p.setFont("Helvetica-Oblique", 9)
         p.setFillColor(muted_text)
-        p.drawString(250, page_height - 70, "Left to right: Stand 1 to Stand 40 along the river")
+        p.drawString(250, page_height - 70, "Bookings ending before yesterday are hidden")
 
     def draw_stand_box(x, y, width, height, stand_number):
         stand = stand_lookup.get(stand_number)
-        
+
         booking_list = stand_booking_map.get(stand.id, []) if stand else []
-        is_booked = len(booking_list) > 0 
+        is_booked = len(booking_list) > 0
 
         status_color = booked_color if is_booked else available_color
         status_text = "BOOKED" if is_booked else "AVAILABLE"
@@ -230,7 +236,7 @@ def stand_report_pdf(request):
         p.roundRect(x, y - height, width, height, 6, fill=1, stroke=1)
 
         p.setFillColor(status_color)
-        p.roundRect(x + 6, y - 20, 56, 14, 4, fill=1, stroke=0)
+        p.roundRect(x + 6, y - 20, 60, 14, 4, fill=1, stroke=0)
 
         p.setFillColor(white)
         p.setFont("Helvetica-Bold", 7)
@@ -238,20 +244,14 @@ def stand_report_pdf(request):
 
         p.setFillColor(title_color)
         p.setFont("Helvetica-Bold", 10)
-        p.drawString(x + 68, y - 15, f"Stand {stand_number}")
-
-        p.setFillColor(black)
-        p.setFont("Helvetica", 7)
+        p.drawString(x + 72, y - 15, f"Stand {stand_number}")
 
         if is_booked:
             y_offset = 34
 
-            for booking_stand in booking_list[:3]:  # limit to 3 bookings per box
+            for booking_stand in booking_list[:3]:
                 booking = booking_stand.booking
-                guest_name = booking.display_name()
-
-                if len(guest_name) > 12:
-                    guest_name = guest_name[:10] + "..."
+                guest_name = booking.display_name()  # full names
 
                 date_text = (
                     f"{booking.arrival_datetime.strftime('%d %b')} - "
@@ -260,13 +260,12 @@ def stand_report_pdf(request):
 
                 p.setFillColor(black)
                 p.setFont("Helvetica", 6)
-                p.drawString(x + 6, y - y_offset, guest_name)
+                p.drawString(x + 6, y - y_offset, guest_name[:26])
 
                 p.setFillColor(muted_text)
                 p.drawString(x + 6, y - (y_offset + 8), date_text)
 
-                y_offset += 14            
-
+                y_offset += 14
         else:
             p.setFillColor(muted_text)
             p.setFont("Helvetica", 7)
@@ -283,8 +282,8 @@ def stand_report_pdf(request):
 
     box_height = 80
     usable_width = page_width - left_margin - right_margin
-    max_cols = 7
-    box_gap = 6
+    max_cols = 4
+    box_gap = 8
     box_width = (usable_width - (box_gap * (max_cols - 1))) / max_cols
 
     current_y = top_y
