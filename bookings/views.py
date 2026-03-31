@@ -1,18 +1,17 @@
 from django.utils import timezone
+from django.http import HttpResponse
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
 
 from datetime import datetime, time
 
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-
 from stands.models import Stand
 from .models import Booking, BookingStand
 from .forms import DashboardBookingForm
-from django.http import HttpResponse
 
 @login_required
 def dashboard(request):
