@@ -19,12 +19,12 @@ def dashboard(request):
     user_bookings = Booking.objects.filter(user=request.user).order_by("-created_at")[:10]
 
     stand_sections = [
-        ("Eskom", [1, 2]),
-        ("Owners A", [3]),
-        ("Boat Club", [4, 5, 6, 7]),
-        ("Owners B", [8, 9, 10, 11, 12, 13, 14]),
+        ("Eskom Members", [1, 2]),
+        ("Owner 3", [3]),
+        ("Boat Club Members", [4, 5, 6, 7]),
+        ("Owners 8 to 14", [8, 9, 10, 11, 12, 13, 14]),
         ("Public", [15, 16, 17, 18, 19, 20, 21]),
-        ("Owners C", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
+        ("Owners 22 to 40", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
     ]
 
     available_stands = Stand.objects.none()
@@ -168,12 +168,12 @@ def stand_report_pdf(request):
 
     # Stand group layout
     stand_sections = [
-        ("Eskom", [1, 2]),
-        ("Owners A", [3]),
-        ("Boat Club", [4, 5, 6, 7]),
-        ("Owners B", [8, 9, 10, 11, 12, 13, 14]),
+        ("Eskom Members", [1, 2]),
+        ("Owner 3", [3]),
+        ("Boat Club Members", [4, 5, 6, 7]),
+        ("Owners 8 to 14", [8, 9, 10, 11, 12, 13, 14]),
         ("Public", [15, 16, 17, 18, 19, 20, 21]),
-        ("Owners C", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
+        ("Owners 22 to 40", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
     ]
 
     stands = Stand.objects.all().order_by("number")
@@ -185,8 +185,8 @@ def stand_report_pdf(request):
 
     stand_booking_map = {}
     for bs in booking_stands:
-        if bs.stand_id and bs.stand_id not in stand_booking_map:
-            stand_booking_map[bs.stand_id] = bs
+        if bs.stand_id:
+            stand_booking_map.setdefault(bs.stand_id, []).append(bs)
 
     def draw_header():
         p.setTitle("Aqua Vaal Stand Layout")
@@ -218,9 +218,10 @@ def stand_report_pdf(request):
 
     def draw_stand_box(x, y, width, height, stand_number):
         stand = stand_lookup.get(stand_number)
-        booking_stand = stand_booking_map.get(stand.id) if stand else None
+        
+        booking_list = stand_booking_map.get(stand.id, []) if stand else []
+        is_booked = len(booking_list) > 0 
 
-        is_booked = booking_stand is not None
         status_color = booked_color if is_booked else available_color
         status_text = "BOOKED" if is_booked else "AVAILABLE"
 
@@ -243,23 +244,33 @@ def stand_report_pdf(request):
         p.setFont("Helvetica", 7)
 
         if is_booked:
-            booking = booking_stand.booking
-            guest_name = booking.display_name()
+            y_offset = 34
 
-            if len(guest_name) > 20:
-                guest_name = guest_name[:17] + "..."
+            for booking_stand in booking_list[:3]:  # limit to 3 bookings per box
+                booking = booking_stand.booking
+                guest_name = booking.display_name()
 
-            date_text = (
-                f"{booking.arrival_datetime.strftime('%d %b')} - "
-                f"{booking.departure_datetime.strftime('%d %b')}"
-            )
+                if len(guest_name) > 12:
+                    guest_name = guest_name[:10] + "..."
+
+                date_text = (
+                    f"{booking.arrival_datetime.strftime('%d %b')} - "
+                    f"{booking.departure_datetime.strftime('%d %b')}"
+                )
+
+                p.setFillColor(black)
+                p.setFont("Helvetica", 6)
+                p.drawString(x + 6, y - y_offset, guest_name)
+
+                p.setFillColor(muted_text)
+                p.drawString(x + 6, y - (y_offset + 8), date_text)
+
+                y_offset += 14            
+
         else:
-            guest_name = "-"
-            date_text = "Ready to book"
-
-        p.drawString(x + 8, y - 34, guest_name)
-        p.setFillColor(muted_text)
-        p.drawString(x + 8, y - 46, date_text)
+            p.setFillColor(muted_text)
+            p.setFont("Helvetica", 7)
+            p.drawString(x + 8, y - 34, "Ready to book")
 
     draw_header()
 
@@ -270,7 +281,7 @@ def stand_report_pdf(request):
     section_gap = 16
     row_gap = 8
 
-    box_height = 52
+    box_height = 80
     usable_width = page_width - left_margin - right_margin
     max_cols = 7
     box_gap = 6
