@@ -159,9 +159,12 @@ def stand_report_pdf(request):
 
     # Colors
     title_color = HexColor("#1F4E79")
-    booked_color = HexColor("#C0392B")
-    available_color = HexColor("#2E8B57")
-    unavailable_color = HexColor("#F4D03F")
+
+    available_color = HexColor("#2ECC71")   # Green
+    pending_color = HexColor("#F4D03F")     # Yellow
+    booked_color = HexColor("#3498DB")      # Blue
+    unavailable_color = HexColor("#E74C3C") # Red
+
     border_color = HexColor("#D5D8DC")
     box_bg = HexColor("#F8F9F9")
     section_color = HexColor("#154360")
@@ -208,47 +211,56 @@ def stand_report_pdf(request):
         p.setFont("Helvetica-Bold", 10)
         p.drawString(25, page_height - 65, "Legend:")
 
+        p.setFont("Helvetica-Oblique", 8)
+        p.setFillColor(muted_text)
+        p.drawString(25, page_height - 85) 
+        p.drawString(25, page_height - 95) 
+        p.drawString(25, page_height - 105)
+
         # Green
         p.setFillColor(available_color)
         p.rect(80, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
-        p.setFont("Helvetica", 9)
         p.drawString(95, page_height - 70, "Available")
 
-        # Red
-        p.setFillColor(booked_color)
-        p.rect(170, page_height - 72, 10, 10, fill=1, stroke=0)
-        p.setFillColor(black)
-        p.drawString(185, page_height - 70, "Booked")
-
         # Yellow
-        p.setFillColor(unavailable_color)
-        p.rect(250, page_height - 72, 10, 10, fill=1, stroke=0)
+        p.setFillColor(pending_color)
+        p.rect(160, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
-        p.drawString(265, page_height - 70, "Unavailable")
+        p.drawString(175, page_height - 70, "Pending")
 
-        p.setFont("Helvetica-Oblique", 8)
-        p.setFillColor(muted_text)
-        p.drawString(25, page_height - 85, "Full names shown where available")
-        p.drawString(25, page_height - 95, "Bookings ending before yesterday are hidden")
-        p.drawString(25, page_height - 105, "Up to 3 entries shown per stand")
+        # Blue
+        p.setFillColor(booked_color)
+        p.rect(230, page_height - 72, 10, 10, fill=1, stroke=0)  
+        p.setFillColor(black)
+        p.drawString(245, page_height - 70, "Booked")
+
+        # Red
+        p.setFillColor(unavailable_color)
+        p.rect(300, page_height - 72, 10, 10, fill=1, stroke=0)
+        p.setFillColor(black)
+        p.drawString(315, page_height - 70, "Unavailable")
 
     def draw_stand_box(x, y, width, height, stand_number):
         stand = stand_lookup.get(stand_number)
         booking_list = stand_booking_map.get(stand.id, []) if stand else []
 
+        pending_items = [bs for bs in booking_list if bs.approval_status == "PENDING"]
         unavailable_items = [bs for bs in booking_list if bs.approval_status == "UNAVAILABLE"]
         booked_items = [bs for bs in booking_list if bs.approval_status in ["APPROVED", "READY_FOR_GATE"]]
 
-        is_unavailable = len(unavailable_items) > 0
-        is_booked = len(booked_items) > 0
-
-        if is_unavailable:
+        if unavailable_items:
             status_color = unavailable_color
             status_text = "UNAVAILABLE"
-        elif is_booked:
+
+        elif booked_items:
             status_color = booked_color
             status_text = "BOOKED"
+
+        elif pending_items:
+            status_color = pending_color
+            status_text = "PENDING"
+
         else:
             status_color = available_color
             status_text = "AVAILABLE"
@@ -294,6 +306,21 @@ def stand_report_pdf(request):
 
                 p.setFillColor(muted_text)
                 p.drawString(x + 6, y - (y_offset + 8), date_text)
+
+                y_offset += 14
+
+        elif pending_items:
+            y_offset = 34
+            for booking_stand in pending_items[:2]:
+                booking = booking_stand.booking
+                guest_name = booking.display_name()
+
+                p.setFillColor(black)
+                p.setFont("Helvetica", 6)
+                p.drawString(x + 6, y - y_offset, guest_name[:28])
+
+                p.setFillColor(muted_text)
+                p.drawString(x + 6, y - (y_offset + 8), "Pending")
 
                 y_offset += 14
 
