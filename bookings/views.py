@@ -202,7 +202,7 @@ def stand_report_pdf(request):
         p.setTitle("Aqua Vaal Stand Layout")
         p.setFont("Helvetica-Bold", 18)
         p.setFillColor(title_color)
-        p.drawString(25, page_height - 28, "Aqua Vaal Stand Layout")
+        p.drawString(25, page_height - 28, "Aqua Vaal Hengelklub Stand Layout")
 
         p.setFont("Helvetica", 10)
         p.setFillColor(black)
@@ -325,7 +325,7 @@ def stand_report_pdf(request):
                 p.drawString(x + 6, y - y_offset, guest_name[:28])
 
                 p.setFillColor(muted_text)
-                p.drawString(x + 6, y - (y_offset + 8), "Pending")
+                p.drawString(x + 6, y - (y_offset + 8), date_text)
 
                 y_offset += 14
 
