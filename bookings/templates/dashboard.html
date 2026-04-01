@@ -225,8 +225,8 @@
                                     {% if number in unavailable_stand_numbers %}
                                         {% for s in unavailable_stands %}
                                             {% if s.number == number %}
-                                                <div class="stand-tile stand-unavailable">
-                                                    Stand {{ number }}
+                                                <div class="stand-tile stand-unavailable" style="cursor:not-allowed; opacity:0.8;">  
+                                                  Stand {{ number }}
                                                     <span class="stand-name">{{ s.reason }}</span>
                                                 </div>
                                             {% endif %}
@@ -235,7 +235,7 @@
                                     {% elif number in booked_stand_numbers %}
                                         {% for s in booked_stands %}
                                             {% if s.number == number %}
-                                                <div class="stand-tile stand-booked">
+                                                <div class="stand-tile stand-booked" style="cursor:not-allowed; opacity:0.8;">
                                                     Stand {{ number }}
                                                     <span class="stand-name">{{ s.name }}</span>
                                                 </div>
@@ -245,7 +245,7 @@
                                     {% elif number in pending_stand_numbers %}
                                         {% for s in pending_stands %}
                                             {% if s.number == number %}
-                                                <div class="stand-tile stand-pending">
+                                                <div class="stand-tile stand-pending" style="cursor:not-allowed; opacity:0.8;">
                                                     Stand {{ number }}
                                                     <span class="stand-name">{{ s.name }}</span>
                                                 </div>
@@ -301,6 +301,14 @@
         };
 
         function selectStandByNumber(standNumber) {
+
+            // only allow if green tile
+            const tile = document.querySelector(`[data-stand-number="${standNumber}"]`);
+
+            if (!tile || !tile.classList.contains("stand-available")) {
+                return; // block everything else
+            }
+
             const hiddenField = document.getElementById("selected-stand-id");
 
             if (standMap[standNumber]) {
@@ -311,10 +319,12 @@
                 tile.classList.remove("stand-selected");
             });
 
-            document.querySelectorAll(".stand-available").forEach(tile => {
-                if (parseInt(tile.dataset.standNumber) === standNumber) {
-                    tile.classList.add("stand-selected");
-                }
+            tile.classList.add("stand-selected");
+
+            const url = new URL(window.location.href);
+            url.searchParams.set("stand_id", standMap[standNumber]);
+            window.location.href = url.toString();
+        }
             });
 
             const url = new URL(window.location.href);
