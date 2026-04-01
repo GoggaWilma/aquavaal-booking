@@ -46,6 +46,25 @@ class CustomUser(AbstractUser):
     objects = CustomUserManager()
 
     def __str__(self):
+        profile = getattr(self, "profile", None)
+
+        if profile:
+            call_name = (profile.call_name or "").strip()
+            surname = (profile.surname or "").strip()
+            full_name = f"{call_name} {surname}".strip()
+
+            if full_name:
+                return full_name
+
+            first_name = (profile.first_name or "").strip()
+            fallback_name = f"{first_name} {surname}".strip()
+            if fallback_name:
+                return fallback_name
+
+        full_name = self.get_full_name().strip()
+        if full_name:
+            return full_name
+
         return self.email
 
 
