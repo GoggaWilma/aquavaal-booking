@@ -101,18 +101,29 @@
         }
 
         .stand-available {
-            background: #d4efdf;
-            color: #1e8449;
+            background: #2ECC71;
+            color: white;
             cursor: pointer;
         }
 
         .stand-booked {
-            background: #f9d6d5;
-            color: #922b21;
+            background: #3498DB;
+            color: white;
+        }
+
+        .stand-pending {
+            background: #F4D03F;
+            color: black;
+        }
+
+        .stand-unavailable {
+            background: #E74C3C;
+            color: white;
         }
 
         .stand-selected {
-            border: 3px solid #154360;
+            border: 3px solid #154360 !important;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
         }
 
         .stand-name {
@@ -187,40 +198,70 @@
                 </div>
             </form>
 
-            {% if available_stand_numbers or booked_stands %}
+            {% if available_stand_numbers or pending_stands or booked_stands or unavailable_stands %}
                 <hr style="margin: 25px 0;">
                 <h3>Select a Stand</h3>
-                <p class="muted">Green stands are available. Red stands are already booked.</p>
+                <p class="muted">Green = Available | Yellow = Pending | Blue = Booked | Red = Unavailable</p>
+
+                {% if selected_stand_id %}
+                <div style="padding:12px; margin-bottom:15px; border:2px solid #154360; background:#eaf4ff; border-radius:6px;">
+                    <strong>Selected Stand:</strong> {{ selected_stand_id }}
+                </div>
+                {% endif %}
 
                 <form method="post" id="booking-form">
                     {% csrf_token %}
                     <input type="hidden" name="arrival_date" value="{{ arrival_date }}">
                     <input type="hidden" name="departure_date" value="{{ departure_date }}">
-                    <input type="hidden" name="stand" id="selected-stand-id">
+                    <input type="hidden" name="stand" id="selected-stand-id" value="{{ selected_stand_id|default:'' }}">
 
                     {% for section_name, stand_numbers in stand_sections %}
                         <div style="margin-bottom: 20px;">
                             <h3>{{ section_name }}</h3>
                             <div class="stand-grid">
+
                                 {% for number in stand_numbers %}
-                                    {% if number in available_stand_numbers %}
+
+                                    {% if number in unavailable_stand_ids %}
+                                        {% for s in unavailable_stands %}
+                                            {% if s.number == number %}
+                                                <div class="stand-tile stand-unavailable">
+                                                    Stand {{ number }}
+                                                    <span class="stand-name">{{ s.reason }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                    {% elif number in booked_stand_ids %}
+                                        {% for s in booked_stands %}
+                                            {% if s.number == number %}
+                                                <div class="stand-tile stand-booked">
+                                                    Stand {{ number }}
+                                                    <span class="stand-name">{{ s.name }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                    {% elif number in pending_stand_ids %}
+                                        {% for s in pending_stands %}
+                                            {% if s.number == number %}
+                                                <div class="stand-tile stand-pending">
+                                                    Stand {{ number }}
+                                                    <span class="stand-name">{{ s.name }}</span>
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+
+                                    {% else %}
                                         <div
-                                            class="stand-tile stand-available"
+                                            class="stand-tile stand-available {% if number == selected_stand_id %}stand-selected{% endif %}"
                                             data-stand-number="{{ number }}"
                                             onclick="selectStandByNumber({{ number }})"
                                         >
                                             Stand {{ number }}
                                         </div>
-                                    {% else %}
-                                        {% for stand in booked_stands %}
-                                            {% if stand.number == number %}
-                                                <div class="stand-tile stand-booked">
-                                                    Stand {{ number }}
-                                                    <span class="stand-name">{{ stand.name }}</span>
-                                                </div>
-                                            {% endif %}
-                                        {% endfor %}
                                     {% endif %}
+
                                 {% endfor %}
                             </div>
                         </div>
@@ -299,6 +340,10 @@
                     tile.classList.add("stand-selected");
                 }
             });
+
+            const url = new URL(window.location.href);
+            url.searchParams.set("stand_id", standMap[standNumber]);
+            window.location.href = url.toString();
         }
     </script>
 </body>

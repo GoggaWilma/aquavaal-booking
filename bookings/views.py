@@ -15,6 +15,7 @@ from .forms import DashboardBookingForm
 
 @login_required
 def dashboard(request):
+    selected_stand_id = request.GET.get("stand_id")
     today = timezone.now().date()
     user_bookings = Booking.objects.filter(user=request.user).order_by("-created_at")[:10]
 
@@ -29,8 +30,14 @@ def dashboard(request):
 
     available_stands = Stand.objects.none()
     available_stand_numbers = []
+
+    pending_stands = []
     booked_stands = []
-    selected_stand_id = None
+    unavailable_stands = []
+
+    pending_stand_ids = set()
+    booked_stand_ids = set()
+    unavailable_stand_ids = set()
 
     arrival_date = request.GET.get("arrival_date")
     departure_date = request.GET.get("departure_date")
@@ -57,25 +64,51 @@ def dashboard(request):
                     booking__departure_datetime__gt=arrival_dt,
                 ).select_related("stand", "booking", "booking__user")
 
-                booked_stand_ids = set()
-
                 for bs in overlapping:
-                    if bs.stand_id and bs.stand_id not in booked_stand_ids:
-                        booked_stand_ids.add(bs.stand_id)
-                        booked_stands.append({
-                            "id": bs.stand.id,
-                            "number": bs.stand.number,
-                            "name": bs.booking.display_name(),
-                        })
+                    if not bs.stand_id:
+                        continue
 
-                available_stands = Stand.objects.exclude(id__in=booked_stand_ids).order_by("number")
-                available_stand_numbers = list(available_stands.values_list("number", flat=True))
+                    stand_info = {
+                        "id": bs.stand.id,
+                        "number": bs.stand.number,
+                        "name": bs.booking.display_name(),
+                    }
+
+                    if bs.approval_status == "UNAVAILABLE":
+                        if bs.stand_id not in unavailable_stand_ids:
+                            unavailable_stand_ids.add(bs.stand_id)
+                            unavailable_stands.append({
+                                "id": bs.stand.id,
+                                "number": bs.stand.number,
+                                "reason": bs.unavailable_reason or "Unavailable",
+                            })
+
+                    elif bs.approval_status in ["APPROVED", "READY_FOR_GATE"]:
+                        if bs.stand_id not in booked_stand_ids:
+                            booked_stand_ids.add(bs.stand_id)
+                            booked_stands.append(stand_info)
+
+                    elif bs.approval_status == "PENDING":
+                        if bs.stand_id not in pending_stand_ids:
+                            pending_stand_ids.add(bs.stand_id)
+                            pending_stands.append(stand_info)
+
+                blocked_ids = booked_stand_ids | unavailable_stand_ids | pending_stand_ids
+
+                available_stands = Stand.objects.exclude(id__in=blocked_ids).order_by("number")
+                available_stand_numbers = list(
+                    available_stands.values_list("number", flat=True)
+                )
+
                 booked_stands = sorted(booked_stands, key=lambda x: x["number"])
+                pending_stands = sorted(pending_stands, key=lambda x: x["number"])
+                unavailable_stands = sorted(unavailable_stands, key=lambda x: x["number"])
 
                 booking_form = DashboardBookingForm(
                     initial={
                         "arrival_date": arrival_date,
                         "departure_date": departure_date,
+                        "stand": selected_stand_id,
                     },
                     available_stands=available_stands,
                 )
@@ -109,6 +142,7 @@ def dashboard(request):
                 is_active=True,
                 booking__arrival_datetime__lt=departure_dt,
                 booking__departure_datetime__gt=arrival_dt,
+                approval_status__in=["PENDING", "APPROVED", "READY_FOR_GATE", "UNAVAILABLE"],
             ).exists()
 
             if overlap:
@@ -131,7 +165,10 @@ def dashboard(request):
                     is_active=True,
                 )
 
-                messages.success(request, f"Booking created successfully for Stand {stand.number}.")
+                messages.success(
+                    request,
+                    f"Booking created successfully for Stand {stand.number}."
+                )
                 return redirect("dashboard")
         else:
             messages.error(request, "Please select dates and an available stand.")
@@ -140,8 +177,13 @@ def dashboard(request):
         "today": today,
         "booking_form": booking_form,
         "bookings": user_bookings,
-        "booked_stands": booked_stands,
         "available_stand_numbers": available_stand_numbers,
+        "pending_stands": pending_stands,
+        "booked_stands": booked_stands,
+        "unavailable_stands": unavailable_stands,
+        "pending_stand_ids": list(pending_stand_ids),
+        "booked_stand_ids": list(booked_stand_ids),
+        "unavailable_stand_ids": list(unavailable_stand_ids),
         "selected_stand_id": int(selected_stand_id) if selected_stand_id else None,
         "stand_sections": stand_sections,
         "arrival_date": request.GET.get("arrival_date", ""),
@@ -149,6 +191,7 @@ def dashboard(request):
     }
 
     return render(request, "dashboard.html", context)
+   
 
 def stand_report_pdf(request):
     response = HttpResponse(content_type="application/pdf")
