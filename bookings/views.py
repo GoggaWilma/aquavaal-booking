@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from reportlab.lib.pagesizes import A4 
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
 
@@ -13,9 +13,19 @@ from stands.models import Stand
 from .models import Booking, BookingStand
 from .forms import DashboardBookingForm
 
+
 @login_required
 def dashboard(request):
     selected_stand_id = request.GET.get("stand_id")
+    selected_stand_number = None
+
+    if selected_stand_id:
+        try:
+            selected_stand_number = Stand.objects.get(id=selected_stand_id).number
+        except Stand.DoesNotExist:
+            selected_stand_id = None
+            selected_stand_number = None
+
     today = timezone.now().date()
     user_bookings = Booking.objects.filter(user=request.user).order_by("-created_at")[:10]
 
@@ -68,12 +78,6 @@ def dashboard(request):
                     if not bs.stand_id:
                         continue
 
-                    stand_info = {
-                        "id": bs.stand.id,
-                        "number": bs.stand.number,
-                        "name": bs.booking.display_name(),
-                    }
-
                     if bs.approval_status == "UNAVAILABLE":
                         if bs.stand_id not in unavailable_stand_ids:
                             unavailable_stand_ids.add(bs.stand_id)
@@ -86,12 +90,20 @@ def dashboard(request):
                     elif bs.approval_status in ["APPROVED", "READY_FOR_GATE"]:
                         if bs.stand_id not in booked_stand_ids:
                             booked_stand_ids.add(bs.stand_id)
-                            booked_stands.append(stand_info)
+                            booked_stands.append({
+                                "id": bs.stand.id,
+                                "number": bs.stand.number,
+                                "name": bs.booking.display_name(),
+                            })
 
                     elif bs.approval_status == "PENDING":
                         if bs.stand_id not in pending_stand_ids:
                             pending_stand_ids.add(bs.stand_id)
-                            pending_stands.append(stand_info)
+                            pending_stands.append({
+                                "id": bs.stand.id,
+                                "number": bs.stand.number,
+                                "name": bs.booking.display_name(),
+                            })
 
                 blocked_ids = booked_stand_ids | unavailable_stand_ids | pending_stand_ids
 
@@ -116,6 +128,14 @@ def dashboard(request):
     # STEP 2: Create booking via POST
     if request.method == "POST":
         selected_stand_id = request.POST.get("stand")
+        selected_stand_number = None
+
+        if selected_stand_id:
+            try:
+                selected_stand_number = Stand.objects.get(id=selected_stand_id).number
+            except Stand.DoesNotExist:
+                selected_stand_id = None
+                selected_stand_number = None
 
         arrival_raw = request.POST.get("arrival_date")
         departure_raw = request.POST.get("departure_date")
@@ -165,10 +185,7 @@ def dashboard(request):
                     is_active=True,
                 )
 
-                messages.success(
-                    request,
-                    f"Booking created successfully for Stand {stand.number}."
-                )
+                messages.success(request, f"Booking created successfully for Stand {stand.number}.")
                 return redirect("dashboard")
         else:
             messages.error(request, "Please select dates and an available stand.")
@@ -181,17 +198,18 @@ def dashboard(request):
         "pending_stands": pending_stands,
         "booked_stands": booked_stands,
         "unavailable_stands": unavailable_stands,
-        "pending_stand_ids": list(pending_stand_ids),
-        "booked_stand_ids": list(booked_stand_ids),
-        "unavailable_stand_ids": list(unavailable_stand_ids),
+        "pending_stand_numbers": [s["number"] for s in pending_stands],
+        "booked_stand_numbers": [s["number"] for s in booked_stands],
+        "unavailable_stand_numbers": [s["number"] for s in unavailable_stands],
         "selected_stand_id": int(selected_stand_id) if selected_stand_id else None,
+        "selected_stand_number": selected_stand_number,
         "stand_sections": stand_sections,
         "arrival_date": request.GET.get("arrival_date", ""),
         "departure_date": request.GET.get("departure_date", ""),
     }
 
     return render(request, "dashboard.html", context)
-   
+
 
 def stand_report_pdf(request):
     response = HttpResponse(content_type="application/pdf")
@@ -200,7 +218,6 @@ def stand_report_pdf(request):
     p = canvas.Canvas(response, pagesize=A4)
     page_width, page_height = A4
 
-    # Colors
     title_color = HexColor("#1F4E79")
 
     available_color = HexColor("#2ECC71")   # Green
@@ -213,11 +230,10 @@ def stand_report_pdf(request):
     section_color = HexColor("#154360")
     muted_text = HexColor("#566573")
 
-    # Stand group layout
     stand_sections = [
         ("Eskom Members", [1, 2]),
         ("Owner 3", [3]),
-        ("Boat Club Members", [4, 5, 6,]),
+        ("Boat Club Members", [4, 5, 6]),
         ("Owners 7 to 14", [7, 8, 9, 10, 11, 12, 13, 14]),
         ("Public", [15, 16, 17, 18, 19, 20, 21]),
         ("Owners 22 to 40", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
@@ -226,7 +242,6 @@ def stand_report_pdf(request):
     stands = Stand.objects.all().order_by("number")
     stand_lookup = {stand.number: stand for stand in stands}
 
-    # Hide bookings that ended before yesterday
     yesterday = timezone.localdate() - timedelta(days=1)
 
     booking_stands = BookingStand.objects.filter(
@@ -245,7 +260,7 @@ def stand_report_pdf(request):
         p.setTitle("Aqua Vaal Stand Layout")
         p.setFont("Helvetica-Bold", 18)
         p.setFillColor(title_color)
-        p.drawString(25, page_height - 28, "Aqua Vaal Hengelklub Stand Layout")
+        p.drawString(25, page_height - 28, "Aqua Vaal Stand Layout")
 
         p.setFont("Helvetica", 10)
         p.setFillColor(black)
@@ -254,31 +269,21 @@ def stand_report_pdf(request):
         p.setFont("Helvetica-Bold", 10)
         p.drawString(25, page_height - 65, "Legend:")
 
-        p.setFont("Helvetica-Oblique", 8)
-        p.setFillColor(muted_text)
-        p.drawString(25, page_height - 85,"") 
-        p.drawString(25, page_height - 95,"") 
-        p.drawString(25, page_height - 105,"")
-
-        # Green
         p.setFillColor(available_color)
         p.rect(80, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
         p.drawString(95, page_height - 70, "Available")
 
-        # Yellow
         p.setFillColor(pending_color)
         p.rect(160, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
         p.drawString(175, page_height - 70, "Pending")
 
-        # Blue
         p.setFillColor(booked_color)
-        p.rect(230, page_height - 72, 10, 10, fill=1, stroke=0)  
+        p.rect(230, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
         p.drawString(245, page_height - 70, "Booked")
 
-        # Red
         p.setFillColor(unavailable_color)
         p.rect(300, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
@@ -295,15 +300,12 @@ def stand_report_pdf(request):
         if unavailable_items:
             status_color = unavailable_color
             status_text = "UNAVAILABLE"
-
         elif booked_items:
             status_color = booked_color
             status_text = "BOOKED"
-
         elif pending_items:
             status_color = pending_color
             status_text = "PENDING"
-
         else:
             status_color = available_color
             status_text = "AVAILABLE"
@@ -361,7 +363,7 @@ def stand_report_pdf(request):
                 date_text = (
                     f"{booking.arrival_datetime.strftime('%d %b')} - "
                     f"{booking.departure_datetime.strftime('%d %b')}"
-                )                 
+                )
 
                 p.setFillColor(black)
                 p.setFont("Helvetica", 6)
