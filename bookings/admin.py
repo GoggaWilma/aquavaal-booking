@@ -5,6 +5,7 @@ from .models import Booking, BookingStand
 class BookingStandInline(admin.TabularInline):
     model = BookingStand
     extra = 1
+    fields = ("stand", "approval_status", "unavailable_reason", "is_active")
 
 
 @admin.register(Booking)
@@ -42,7 +43,13 @@ class BookingAdmin(admin.ModelAdmin):
         "override_note",
     )
 
-    list_filter = ("booking_mode", "status", "payment_status", "attendance_status")
+    list_filter = (
+        "booking_mode",
+        "status",
+        "payment_status",
+        "attendance_status",
+    )
+
     inlines = [BookingStandInline]
 
     def display_booking_name(self, obj):
@@ -59,3 +66,26 @@ class BookingAdmin(admin.ModelAdmin):
             return "Active Member"
         return profile.membership_type
     user_membership_status.short_description = "Membership"
+
+
+@admin.register(BookingStand)
+class BookingStandAdmin(admin.ModelAdmin):
+    list_display = (
+        "stand",
+        "booking",
+        "approval_status",
+        "unavailable_reason",
+        "is_active",
+    )
+
+    list_filter = (
+        "approval_status",
+        "is_active",
+    )
+
+    search_fields = (
+        "stand__number",
+        "booking__guest_name",
+        "booking__user__email",
+        "unavailable_reason",
+    )

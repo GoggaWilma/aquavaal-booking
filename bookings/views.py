@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from reportlab.lib.pagesizes import A4, landscape
+from reportlab.lib.pagesizes import A4 
 from reportlab.lib.colors import HexColor, white, black
 from reportlab.pdfgen import canvas
 
@@ -21,8 +21,8 @@ def dashboard(request):
     stand_sections = [
         ("Eskom Members", [1, 2]),
         ("Owner 3", [3]),
-        ("Boat Club Members", [4, 5, 6, 7]),
-        ("Owners 8 to 14", [8, 9, 10, 11, 12, 13, 14]),
+        ("Boat Club Members", [4, 5, 6]),
+        ("Owners 7 to 14", [7, 8, 9, 10, 11, 12, 13, 14]),
         ("Public", [15, 16, 17, 18, 19, 20, 21]),
         ("Owners 22 to 40", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
     ]
@@ -161,6 +161,7 @@ def stand_report_pdf(request):
     title_color = HexColor("#1F4E79")
     booked_color = HexColor("#C0392B")
     available_color = HexColor("#2E8B57")
+    unavailable_color = HexColor("#F4D03F")
     border_color = HexColor("#D5D8DC")
     box_bg = HexColor("#F8F9F9")
     section_color = HexColor("#154360")
@@ -170,8 +171,8 @@ def stand_report_pdf(request):
     stand_sections = [
         ("Eskom Members", [1, 2]),
         ("Owner 3", [3]),
-        ("Boat Club Members", [4, 5, 6, 7]),
-        ("Owners 8 to 14", [8, 9, 10, 11, 12, 13, 14]),
+        ("Boat Club Members", [4, 5, 6,]),
+        ("Owners 7 to 14", [7, 8, 9, 10, 11, 12, 13, 14]),
         ("Public", [15, 16, 17, 18, 19, 20, 21]),
         ("Owners 22 to 40", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
     ]
@@ -179,7 +180,7 @@ def stand_report_pdf(request):
     stands = Stand.objects.all().order_by("number")
     stand_lookup = {stand.number: stand for stand in stands}
 
-    # Exclude bookings that ended before yesterday
+    # Hide bookings that ended before yesterday
     yesterday = timezone.localdate() - timedelta(days=1)
 
     booking_stands = BookingStand.objects.filter(
@@ -207,36 +208,57 @@ def stand_report_pdf(request):
         p.setFont("Helvetica-Bold", 10)
         p.drawString(25, page_height - 65, "Legend:")
 
+        # Green
         p.setFillColor(available_color)
-        p.rect(72, page_height - 72, 12, 12, fill=1, stroke=0)
+        p.rect(80, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
-        p.setFont("Helvetica", 10)
-        p.drawString(90, page_height - 70, "Available")
+        p.setFont("Helvetica", 9)
+        p.drawString(95, page_height - 70, "Available")
 
+        # Red
         p.setFillColor(booked_color)
-        p.rect(160, page_height - 72, 12, 12, fill=1, stroke=0)
+        p.rect(170, page_height - 72, 10, 10, fill=1, stroke=0)
         p.setFillColor(black)
-        p.drawString(178, page_height - 70, "Booked")
+        p.drawString(185, page_height - 70, "Booked")
 
-        p.setFont("Helvetica-Oblique", 9)
+        # Yellow
+        p.setFillColor(unavailable_color)
+        p.rect(250, page_height - 72, 10, 10, fill=1, stroke=0)
+        p.setFillColor(black)
+        p.drawString(265, page_height - 70, "Unavailable")
+
+        p.setFont("Helvetica-Oblique", 8)
         p.setFillColor(muted_text)
-        p.drawString(250, page_height - 70, "Bookings ending before yesterday are hidden")
+        p.drawString(25, page_height - 85, "Full names shown where available")
+        p.drawString(25, page_height - 95, "Bookings ending before yesterday are hidden")
+        p.drawString(25, page_height - 105, "Up to 3 entries shown per stand")
 
     def draw_stand_box(x, y, width, height, stand_number):
         stand = stand_lookup.get(stand_number)
-
         booking_list = stand_booking_map.get(stand.id, []) if stand else []
-        is_booked = len(booking_list) > 0
 
-        status_color = booked_color if is_booked else available_color
-        status_text = "BOOKED" if is_booked else "AVAILABLE"
+        unavailable_items = [bs for bs in booking_list if bs.approval_status == "UNAVAILABLE"]
+        booked_items = [bs for bs in booking_list if bs.approval_status in ["APPROVED", "READY_FOR_GATE"]]
+
+        is_unavailable = len(unavailable_items) > 0
+        is_booked = len(booked_items) > 0
+
+        if is_unavailable:
+            status_color = unavailable_color
+            status_text = "UNAVAILABLE"
+        elif is_booked:
+            status_color = booked_color
+            status_text = "BOOKED"
+        else:
+            status_color = available_color
+            status_text = "AVAILABLE"
 
         p.setFillColor(box_bg)
         p.setStrokeColor(border_color)
         p.roundRect(x, y - height, width, height, 6, fill=1, stroke=1)
 
         p.setFillColor(status_color)
-        p.roundRect(x + 6, y - 20, 60, 14, 4, fill=1, stroke=0)
+        p.roundRect(x + 6, y - 20, 68, 14, 4, fill=1, stroke=0)
 
         p.setFillColor(white)
         p.setFont("Helvetica-Bold", 7)
@@ -244,14 +266,22 @@ def stand_report_pdf(request):
 
         p.setFillColor(title_color)
         p.setFont("Helvetica-Bold", 10)
-        p.drawString(x + 72, y - 15, f"Stand {stand_number}")
+        p.drawString(x + 80, y - 15, f"Stand {stand_number}")
 
-        if is_booked:
+        if is_unavailable:
             y_offset = 34
+            for booking_stand in unavailable_items[:2]:
+                reason = booking_stand.unavailable_reason or "No reason given"
+                p.setFillColor(black)
+                p.setFont("Helvetica", 6)
+                p.drawString(x + 6, y - y_offset, reason[:28])
+                y_offset += 10
 
-            for booking_stand in booking_list[:3]:
+        elif is_booked:
+            y_offset = 34
+            for booking_stand in booked_items[:3]:
                 booking = booking_stand.booking
-                guest_name = booking.display_name()  # full names
+                guest_name = booking.display_name()
 
                 date_text = (
                     f"{booking.arrival_datetime.strftime('%d %b')} - "
@@ -260,22 +290,18 @@ def stand_report_pdf(request):
 
                 p.setFillColor(black)
                 p.setFont("Helvetica", 6)
-                p.drawString(x + 6, y - y_offset, guest_name[:26])
+                p.drawString(x + 6, y - y_offset, guest_name[:28])
 
                 p.setFillColor(muted_text)
                 p.drawString(x + 6, y - (y_offset + 8), date_text)
 
                 y_offset += 14
-        else:
-            p.setFillColor(muted_text)
-            p.setFont("Helvetica", 7)
-            p.drawString(x + 8, y - 34, "Ready to book")
 
     draw_header()
 
     left_margin = 25
     right_margin = 25
-    top_y = page_height - 95
+    top_y = page_height - 120
     bottom_margin = 25
     section_gap = 16
     row_gap = 8

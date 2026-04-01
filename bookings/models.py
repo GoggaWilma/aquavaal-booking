@@ -143,9 +143,10 @@ class Booking(models.Model):
 
 APPROVAL_STATUS_CHOICES = [
     ("PENDING", "Pending"),
-    ("APPROVED", "Approved"),
-    ("REJECTED", "Rejected"),
-    ("READY_FOR_GATE", "Ready For Gate"),
+    ("APPROVED", "Booked"),
+    ("REJECTED", "Refused Booking"),
+    ("READY_FOR_GATE", "Booking Approved"),
+    ("UNAVAILABLE", "Unavailable"),
 ]
 
 class BookingStand(models.Model):
@@ -168,6 +169,11 @@ class BookingStand(models.Model):
         default="PENDING"
     )
 
+    unavailable_reason = models.CharField(
+        max_length=255, 
+        null=True, blank=True
+    )
+
     is_active = models.BooleanField(default=True)
 
     action_timestamp = models.DateTimeField(null=True, blank=True)
@@ -177,6 +183,9 @@ class BookingStand(models.Model):
         return f"Stand {stand_label} - {self.approval_status}"
 
     def clean(self):
+        if self.approval_status == "UNAVAILABLE" and not self.unavailable_reason:
+            raise ValidationError("Provide a reason when a stand is marked unavailable.")
+
         if not self.stand or not self.booking:
             return
 
