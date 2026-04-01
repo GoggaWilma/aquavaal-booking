@@ -13,10 +13,9 @@ class BookingAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "display_booking_name",
+        "stand_numbers",
         "user_membership_status",
         "booking_mode",
-        "payment_status",
-        "attendance_status",
         "arrival_datetime",
         "departure_datetime",
         "status",
@@ -67,6 +66,10 @@ class BookingAdmin(admin.ModelAdmin):
         return profile.membership_type
     user_membership_status.short_description = "Membership"
 
+    def stand_numbers(self, obj):
+        stands = obj.booking_stands.filter(stand__isnull=False).values_list("stand__number", flat=True)
+        return ", ".join(str(number) for number in stands) if stands else "-"
+    stand_numbers.short_description = "Stand Number"
 
 @admin.register(BookingStand)
 class BookingStandAdmin(admin.ModelAdmin):
