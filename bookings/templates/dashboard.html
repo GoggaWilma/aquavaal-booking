@@ -203,9 +203,9 @@
                 <h3>Select a Stand</h3>
                 <p class="muted">Green = Available | Yellow = Pending | Blue = Booked | Red = Unavailable</p>
 
-                {% if selected_stand_id %}
+                {% if selected_stand_number %}
                 <div style="padding:12px; margin-bottom:15px; border:2px solid #154360; background:#eaf4ff; border-radius:6px;">
-                    <strong>Selected Stand:</strong> {{ selected_stand_id }}
+                    <strong>Selected Stand:</strong> {{ selected_stand_number }}
                 </div>
                 {% endif %}
 
@@ -222,7 +222,7 @@
 
                                 {% for number in stand_numbers %}
 
-                                    {% if number in unavailable_stand_ids %}
+                                    {% if number in unavailable_stand_numbers %}
                                         {% for s in unavailable_stands %}
                                             {% if s.number == number %}
                                                 <div class="stand-tile stand-unavailable">
@@ -232,7 +232,7 @@
                                             {% endif %}
                                         {% endfor %}
 
-                                    {% elif number in booked_stand_ids %}
+                                    {% elif number in booked_stand_numbers %}
                                         {% for s in booked_stands %}
                                             {% if s.number == number %}
                                                 <div class="stand-tile stand-booked">
@@ -242,7 +242,7 @@
                                             {% endif %}
                                         {% endfor %}
 
-                                    {% elif number in pending_stand_ids %}
+                                    {% elif number in pending_stand_numbers %}
                                         {% for s in pending_stands %}
                                             {% if s.number == number %}
                                                 <div class="stand-tile stand-pending">
@@ -254,7 +254,7 @@
 
                                     {% else %}
                                         <div
-                                            class="stand-tile stand-available {% if number == selected_stand_id %}stand-selected{% endif %}"
+                                            class="stand-tile stand-available {% if number == selected_stand_number %}stand-selected{% endif %}"
                                             data-stand-number="{{ number }}"
                                             onclick="selectStandByNumber({{ number }})"
                                         >
