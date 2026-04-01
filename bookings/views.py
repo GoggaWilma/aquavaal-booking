@@ -213,9 +213,9 @@ def stand_report_pdf(request):
 
         p.setFont("Helvetica-Oblique", 8)
         p.setFillColor(muted_text)
-        p.drawString(25, page_height - 85) 
-        p.drawString(25, page_height - 95) 
-        p.drawString(25, page_height - 105)
+        p.drawString(25, page_height - 85,"") 
+        p.drawString(25, page_height - 95,"") 
+        p.drawString(25, page_height - 105,"")
 
         # Green
         p.setFillColor(available_color)
@@ -280,7 +280,7 @@ def stand_report_pdf(request):
         p.setFont("Helvetica-Bold", 10)
         p.drawString(x + 80, y - 15, f"Stand {stand_number}")
 
-        if is_unavailable:
+        if unavailable_items:
             y_offset = 34
             for booking_stand in unavailable_items[:2]:
                 reason = booking_stand.unavailable_reason or "No reason given"
@@ -289,7 +289,7 @@ def stand_report_pdf(request):
                 p.drawString(x + 6, y - y_offset, reason[:28])
                 y_offset += 10
 
-        elif is_booked:
+        elif booked_items:
             y_offset = 34
             for booking_stand in booked_items[:3]:
                 booking = booking_stand.booking
