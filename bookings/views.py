@@ -315,6 +315,11 @@ def stand_report_pdf(request):
                 booking = booking_stand.booking
                 guest_name = booking.display_name()
 
+                date_text = (
+                    f"{booking.arrival_datetime.strftime('%d %b')} - "
+                    f"{booking.departure_datetime.strftime('%d %b')}"
+                )                 
+
                 p.setFillColor(black)
                 p.setFont("Helvetica", 6)
                 p.drawString(x + 6, y - y_offset, guest_name[:28])
