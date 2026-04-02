@@ -54,7 +54,6 @@ def dashboard(request):
 
     booking_form = DashboardBookingForm()
 
-    # STEP 1: Check availability via GET
     if arrival_date and departure_date:
         booking_form = DashboardBookingForm(request.GET)
 
@@ -94,6 +93,8 @@ def dashboard(request):
                                 "id": bs.stand.id,
                                 "number": bs.stand.number,
                                 "name": bs.booking.display_name(),
+                                "arrival": bs.booking.arrival_datetime.strftime("%d %b %Y"),
+                                "departure": bs.booking.departure_datetime.strftime("%d %b %Y"),
                             })
 
                     elif bs.approval_status == "PENDING":
@@ -103,6 +104,8 @@ def dashboard(request):
                                 "id": bs.stand.id,
                                 "number": bs.stand.number,
                                 "name": bs.booking.display_name(),
+                                "arrival": bs.booking.arrival_datetime.strftime("%d %b %Y"),
+                                "departure": bs.booking.departure_datetime.strftime("%d %b %Y"),
                             })
 
                 blocked_ids = booked_stand_ids | unavailable_stand_ids | pending_stand_ids
@@ -125,7 +128,6 @@ def dashboard(request):
                     available_stands=available_stands,
                 )
 
-    # STEP 2: Create booking via POST
     if request.method == "POST":
         selected_stand_id = request.POST.get("stand")
         selected_stand_number = None
@@ -220,10 +222,10 @@ def stand_report_pdf(request):
 
     title_color = HexColor("#1F4E79")
 
-    available_color = HexColor("#2ECC71")   # Green
-    pending_color = HexColor("#F4D03F")     # Yellow
-    booked_color = HexColor("#3498DB")      # Blue
-    unavailable_color = HexColor("#E74C3C") # Red
+    available_color = HexColor("#2ECC71")
+    pending_color = HexColor("#F4D03F")
+    booked_color = HexColor("#3498DB")
+    unavailable_color = HexColor("#E74C3C")
 
     border_color = HexColor("#D5D8DC")
     box_bg = HexColor("#F8F9F9")
