@@ -275,15 +275,16 @@
                                                 <div class="stand-tile stand-pending">
                                                     Stand {{ number }}
                                                     <span class="stand-name">{{ s.name }}</span>
+
                                                     <div class="tooltip">
-                                                        <strong>{{ s.name }}</strong><br>
-                                                        Pending<br>
-                                                        {{ s.arrival }} to {{ s.departure }}
+                                                        {% for b in s.bookings %}
+                                                            <strong>{{ b.name }}</strong><br>
+                                                            Pending<br>
+                                                            {{ b.arrival }} to {{ b.departure }}<br>
+                                                            {% if not forloop.last %}<br>{% endif %}               
+                                                        {% endfor %}
                                                     </div>
                                                 </div>
-                                            {% endif %}
-                                        {% endfor %}
-
                                     {% else %}
                                         <div
                                             class="stand-tile stand-available {% if number == selected_stand_number %}stand-selected{% endif %}"
