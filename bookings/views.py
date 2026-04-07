@@ -119,19 +119,19 @@ def dashboard(request):
                             "name": bs.booking.display_name(),
                             "arrival": bs.booking.arrival_datetime.strftime("%d %b %Y"),
                             "departure": bs.booking.departure_datetime.strftime("%d %b %Y"),
-                    }
+                        }
 
-                    if existing:
-                        existing["bookings"].append(entry)
-                    else:
-                        pending_stands.append({
-                            "id": bs.stand.id,
-                            "number": bs.stand.number,
-                            "bookings": [entry],
-                            "name": entry["name"],
-                            "arrival": entry["arrival"],
-                            "departure": entry["departure"],
-                    })
+                        if existing:
+                            existing["bookings"].append(entry)
+                        else:
+                            pending_stands.append({
+                                "id": bs.stand.id,
+                                "number": bs.stand.number,
+                                "bookings": [entry],
+                                "name": entry["name"],
+                                "arrival": entry["arrival"],
+                                "departure": entry["departure"],
+                            })
 
                 blocked_ids = booked_stand_ids | unavailable_stand_ids | pending_stand_ids
 
