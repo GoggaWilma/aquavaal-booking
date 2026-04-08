@@ -448,38 +448,51 @@
             {% endfor %}
         };
 
-        function selectStandByNumber(standNumber) {
-            const tile = document.querySelector(`[data-stand-number="${standNumber}"]`);
+<script>
+    const standMap = {
+        {% for stand in booking_form.fields.stand.queryset %}
+            {{ stand.number }}: {{ stand.id }},
+        {% endfor %}
+    };
 
-            if (!tile || !tile.classList.contains("stand-available")) {
-                return;
-            }
+    function selectStandByNumber(standNumber) {
+        const tile = document.querySelector(`[data-stand-number="${standNumber}"]`);
 
-            document.getElementById("selected-stand-id").value = standMap[standNumber];
-
-            document.querySelectorAll(".stand-available").forEach(t => {
-                t.classList.remove("stand-selected");
-            });
-
-            tile.classList.add("stand-selected");
-
-            const selectedBanner = document.getElementById("selected-stand-banner");
-            if (selectedBanner) {
-                selectedBanner.style.display = "block";
-                selectedBanner.innerHTML = "<strong>Selected Stand:</strong> " + standNumber;
-            }
-
-            const url = new URL(window.location.href);
-            url.searchParams.set("stand_id", standMap[standNumber]);
-            window.location.href = url.toString();
+        if (!tile || !tile.classList.contains("stand-available")) {
+            return;
         }
 
-        window.addEventListener("load", function () {
-            const selected = document.querySelector(".stand-selected");
-            if (selected) {
-                selected.scrollIntoView({ behavior: "smooth", block: "center" });
-            }
+        const hiddenField = document.getElementById("selected-stand-id");
+        hiddenField.value = standMap[standNumber];
+
+        document.querySelectorAll(".stand-available").forEach(t => {
+            t.classList.remove("stand-selected");
         });
-    </script>
+
+        tile.classList.add("stand-selected");
+
+        const selectedBanner = document.getElementById("selected-stand-banner");
+        if (selectedBanner) {
+            selectedBanner.style.display = "block";
+            selectedBanner.innerHTML = "<strong>Selected Stand:</strong> " + standNumber;
+        }
+
+        const createButton = document.querySelector('button[form="booking-form"]');
+        if (createButton) {
+            createButton.disabled = false;
+        }
+
+        const url = new URL(window.location.href);
+        url.searchParams.set("stand_id", standMap[standNumber]);
+        window.history.replaceState({}, "", url.toString());
+    }
+
+    window.addEventListener("load", function () {
+        const selected = document.querySelector(".stand-selected");
+        if (selected) {
+            selected.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+    });
+</script>
 </body>
 </html>
