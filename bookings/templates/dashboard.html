@@ -49,6 +49,11 @@
             background: #5d6d7e;
         }
 
+        button:disabled {
+            background: #bfc9ca;
+            cursor: not-allowed;
+        }
+
         .form-row {
             margin-bottom: 15px;
         }
@@ -99,12 +104,18 @@
             font-weight: bold;
             border: 2px solid transparent;
             position: relative;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
         .stand-available {
             background: #2ECC71;
             color: white;
             cursor: pointer;
+        }
+
+        .stand-available:hover {
+            transform: scale(1.04);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.18);
         }
 
         .stand-booked {
@@ -180,6 +191,54 @@
             visibility: visible;
             opacity: 1;
         }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px auto;
+                padding: 12px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+            .stand-grid {
+                gap: 8px;
+            }
+
+            .stand-tile {
+                width: calc(50% - 8px);
+                min-height: 78px;
+                font-size: 12px;
+                padding: 8px;
+            }
+
+            .stand-name {
+                font-size: 10px;
+            }
+
+            .button,
+            button {
+                width: 100%;
+                margin: 6px 0 0 0 !important;
+                box-sizing: border-box;
+            }
+
+            input[type="date"] {
+                max-width: 100%;
+            }
+
+            .tooltip {
+                min-width: 130px;
+                font-size: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stand-tile {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -214,19 +273,21 @@
                 <div class="button-row">
                     <button type="submit">Check Availability</button>
                     <a href="/report/stands/" class="button secondary" style="margin-left:10px;">View Stand Layout PDF</a>
+                    <a href="/admin/" class="button secondary" style="margin-left:10px;">Admin</a>
                 </div>
             </form>
 
             {% if available_stand_numbers or pending_stands or booked_stands or unavailable_stands %}
                 <hr style="margin: 25px 0;">
                 <h3>Select a Stand</h3>
-                <p class="muted">Green = Available | Yellow = Pending | Blue = Booked | Red = Unavailable</p>
+                <p class="muted">Tap a green stand to select it. Yellow is pending, blue is booked, red is unavailable.</p>
 
-                {% if selected_stand_number %}
-                <div style="padding:12px; margin-bottom:15px; border:2px solid #154360; background:#eaf4ff; border-radius:6px;">
-                    <strong>Selected Stand:</strong> {{ selected_stand_number }}
+                <div id="selected-stand-banner"
+                     style="padding:12px; margin-bottom:15px; border:2px solid #154360; background:#eaf4ff; border-radius:6px; {% if not selected_stand_number %}display:none;{% endif %}">
+                    {% if selected_stand_number %}
+                        <strong>Selected Stand:</strong> {{ selected_stand_number }}
+                    {% endif %}
                 </div>
-                {% endif %}
 
                 <form method="post" id="booking-form">
                     {% csrf_token %}
@@ -271,7 +332,7 @@
                                                     </div>
                                                 </div>
                                             {% endif %}
-                                        {% endfor %}                               
+                                        {% endfor %}
 
                                     {% elif number in pending_stand_numbers %}
                                         {% for s in pending_stands %}
@@ -285,12 +346,13 @@
                                                             <strong>{{ b.name }}</strong><br>
                                                             Pending<br>
                                                             {{ b.arrival }} to {{ b.departure }}<br>
-                                                            {% if not forloop.last %}<br>{% endif %}               
+                                                            {% if not forloop.last %}<br>{% endif %}
                                                         {% endfor %}
                                                     </div>
                                                 </div>
                                             {% endif %}
                                         {% endfor %}
+
                                     {% else %}
                                         <div
                                             class="stand-tile stand-available {% if number == selected_stand_number %}stand-selected{% endif %}"
@@ -300,13 +362,14 @@
                                             Stand {{ number }}
                                         </div>
                                     {% endif %}
-                                {% endfor %}                  
+
+                                {% endfor %}
                             </div>
                         </div>
                     {% endfor %}
-                               
+
                     <div class="button-row">
-                        <button type="submit">Create Booking</button>
+                        <button type="submit" {% if not selected_stand_id %}disabled{% endif %}>Create Booking</button>
                     </div>
                 </form>
             {% endif %}
@@ -353,10 +416,23 @@
 
             tile.classList.add("stand-selected");
 
+            const selectedBanner = document.getElementById("selected-stand-banner");
+            if (selectedBanner) {
+                selectedBanner.style.display = "block";
+                selectedBanner.innerHTML = "<strong>Selected Stand:</strong> " + standNumber;
+            }
+
             const url = new URL(window.location.href);
             url.searchParams.set("stand_id", standMap[standNumber]);
             window.location.href = url.toString();
         }
+
+        window.addEventListener("load", function () {
+            const selected = document.querySelector(".stand-selected");
+            if (selected) {
+                selected.scrollIntoView({ behavior: "smooth", block: "center" });
+            }
+        });
     </script>
 </body>
 </html>
