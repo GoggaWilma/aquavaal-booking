@@ -54,6 +54,14 @@
             cursor: not-allowed;
         }
 
+        .button.primary {
+            background: #27ae60;
+        }
+
+        .button.danger {
+            background: #c0392b;
+        }
+
         .form-row {
             margin-bottom: 15px;
         }
@@ -301,14 +309,24 @@
 
                 <div class="button-row">
                     <button type="submit">🔎 Check Availability</button>
-                    <a href="/report/stands/" target="_blank" class="button secondary" style="margin-left:10px;">📄 View PDF</a>
-                    <a href="/report/stands/?download=1" class="button secondary" style="margin-left:10px;">⬇ Download PDF</a>
-                    <a href="/admin/" class="button secondary" style="margin-left:10px;">⚙ Admin</a>
+
+                    <button form="booking-form"
+                            class="button primary"
+                            {% if not selected_stand_id %}disabled{% endif %}>
+                        ✅ Create Booking
+                    </button>
+                    
+                    <a href="/report/stands/" target="_blank" class="button secondary">📄  View PDF</a>
+                    
+                    <a href="/report/stands/?download=1" class="button secondary">⬇ Download PDF</a>
+                    
+                    <a href="/admin/" class="button danger">⚙ Admin</a>
                 </div>
             </form>
 
             {% if available_stand_numbers or pending_stands or booked_stands or unavailable_stands %}
                 <hr style="margin: 25px 0;">
+
                 <h3>Select a Stand</h3>
                 <p class="muted">Tap a green stand to select it. Yellow is pending, blue is booked, red is unavailable.</p>
 
@@ -325,14 +343,11 @@
                                 <strong>Selected Stand:</strong> {{ selected_stand_number }}
                             {% endif %}
                         </div>
-
-                        <div class="button-row">
-                            <button type="submit" {% if not selected_stand_id %}disabled{% endif %}>✅ Create Booking</button>
-                        </div>
                     </div>
 
                     {% for section_name, stand_numbers in stand_sections %}
                         <div style="margin-bottom: 20px;">
+
                             <h3>{{ section_name }}</h3>
                             <div class="stand-grid">
 
