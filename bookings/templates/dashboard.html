@@ -261,13 +261,17 @@
                                                 <div class="stand-tile stand-booked">
                                                     Stand {{ number }}
                                                     <span class="stand-name">{{ s.name }}</span>
+
                                                     <div class="tooltip">
-                                                        <strong>{{ s.name }}</strong><br>
-                                                        {{ s.arrival }} to {{ s.departure }}
+                                                        {% for b in s.bookings %}
+                                                            <strong>{{ b.name }}</strong><br>
+                                                            {{ b.arrival }} to {{ b.departure }}<br>
+                                                            {% if not forloop.last %}<br>{% endif %}
+                                                        {% endfor %}
                                                     </div>
                                                 </div>
                                             {% endif %}
-                                        {% endfor %}
+                                        {% endfor %}                               
 
                                     {% elif number in pending_stand_numbers %}
                                         {% for s in pending_stands %}
@@ -285,6 +289,8 @@
                                                         {% endfor %}
                                                     </div>
                                                 </div>
+                                            {% endif %}
+                                        {% endfor %}
                                     {% else %}
                                         <div
                                             class="stand-tile stand-available {% if number == selected_stand_number %}stand-selected{% endif %}"
@@ -294,12 +300,11 @@
                                             Stand {{ number }}
                                         </div>
                                     {% endif %}
-
-                                {% endfor %}
+                                {% endfor %}                  
                             </div>
                         </div>
                     {% endfor %}
-
+                               
                     <div class="button-row">
                         <button type="submit">Create Booking</button>
                     </div>
