@@ -240,7 +240,12 @@ def dashboard(request):
 
 def stand_report_pdf(request):
     response = HttpResponse(content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="stand_layout_report.pdf"'
+    
+    if request.GET.get("download") == "1":
+        response["Content-Disposition"] = 'attachment; filename="stand_layout_report.pdf"'
+    
+    else:
+        response["Content-Disposition"] = 'inline; filename="stand_layout_report.pdf"'
 
     p = canvas.Canvas(response, pagesize=A4)
     page_width, page_height = A4
@@ -460,5 +465,6 @@ def stand_report_pdf(request):
         rows_used = ((len(stand_numbers) - 1) // max_cols) + 1
         current_y = current_y - (rows_used * (box_height + row_gap)) - section_gap
 
+    p.showPage()
     p.save()
     return response

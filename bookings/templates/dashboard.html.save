@@ -239,35 +239,7 @@
                 width: 100%;
             }
         }
-    
-        .sticky-booking-bar {
-            position: sticky;
-            top: 10px;
-            z-index: 15;
-            background: white;
-            padding: 10px 0;
-        }
-
-        .button-row a,
-        .button-row button {
-            margin-top: 6px;
-            display: inline-block;
-        }
-
-        @media (max-width: 768px) {
-            .button-row a,
-            .button-row button {
-                width: 100%;
-                margin-left: 0 !important;
-            }
-
-            .sticky-booking-bar {
-                top: 0;
-                padding-top: 8px;
-            }
-        }
-
-</style>
+    </style>
 </head>
 <body>
     <div class="container">
@@ -278,7 +250,6 @@
             <div class="messages">
                 {% for message in messages %}
                     <div class="message {% if message.tags == 'success' %}success{% else %}error{% endif %}">
-                        {% if message.tags == 'success' %}✅{% else %}⚠️{% endif %}
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -300,10 +271,12 @@
                 </div>
 
                 <div class="button-row">
-                    <button type="submit">🔎 Check Availability</button>
-                    <a href="/report/stands/" target="_blank" class="button secondary" style="margin-left:10px;">📄 View PDF</a>
-                    <a href="/report/stands/?download=1" class="button secondary" style="margin-left:10px;">⬇ Download PDF</a>
-                    <a href="/admin/" class="button secondary" style="margin-left:10px;">⚙ Admin</a>
+                    <button type="submit">Check Availability</button>
+          
+                    <a href="/report/stands/" target="_blank" class="button secondary" style="margin-left:10px;">View Stand Layout PDF</a>
+                    <a href="/report/stands/?download=1" class="button secondary" style="margin-left:10px;">Download PDF</a>
+
+                    <a href="/admin/" class="button secondary" style="margin-left:10px;">Admin</a>
                 </div>
             </form>
 
@@ -312,24 +285,18 @@
                 <h3>Select a Stand</h3>
                 <p class="muted">Tap a green stand to select it. Yellow is pending, blue is booked, red is unavailable.</p>
 
+                <div id="selected-stand-banner"
+                     style="padding:12px; margin-bottom:15px; border:2px solid #154360; background:#eaf4ff; border-radius:6px; {% if not selected_stand_number %}display:none;{% endif %}">
+                    {% if selected_stand_number %}
+                        <strong>Selected Stand:</strong> {{ selected_stand_number }}
+                    {% endif %}
+                </div>
+
                 <form method="post" id="booking-form">
                     {% csrf_token %}
                     <input type="hidden" name="arrival_date" value="{{ arrival_date }}">
                     <input type="hidden" name="departure_date" value="{{ departure_date }}">
                     <input type="hidden" name="stand" id="selected-stand-id" value="{{ selected_stand_id|default:'' }}">
-
-                    <div class="sticky-booking-bar">
-                        <div id="selected-stand-banner"
-                            style="padding:12px; margin-bottom:12px; border:2px solid #154360; background:#eaf4ff; border-radius:6px; {% if not selected_stand_number %}display:none;{% endif %}">
-                            {% if selected_stand_number %}
-                                <strong>Selected Stand:</strong> {{ selected_stand_number }}
-                            {% endif %}
-                        </div>
-
-                        <div class="button-row">
-                            <button type="submit" {% if not selected_stand_id %}disabled{% endif %}>✅ Create Booking</button>
-                        </div>
-                    </div>
 
                     {% for section_name, stand_numbers in stand_sections %}
                         <div style="margin-bottom: 20px;">
@@ -351,7 +318,7 @@
                                                 </div>
                                             {% endif %}
                                         {% endfor %}
-                                    
+
                                     {% elif number in booked_stand_numbers %}
                                         {% for s in booked_stands %}
                                             {% if s.number == number %}
@@ -403,9 +370,13 @@
                             </div>
                         </div>
                     {% endfor %}
-                    </form>
-                {% endif %}
-            </div>    
+
+                    <div class="button-row">
+                        <button type="submit" {% if not selected_stand_id %}disabled{% endif %}>Create Booking</button>
+                    </div>
+                </form>
+            {% endif %}
+        </div>
 
         <div class="section">
             <h2>My Bookings</h2>
