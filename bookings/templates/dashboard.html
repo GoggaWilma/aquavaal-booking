@@ -316,7 +316,7 @@
                         ✅ Create Booking
                     </button>
                     
-                    <a href="/report/stands/" target="_blank" class="button secondary">📄  View PDF</a>
+                    <a href="/report/stands/" target="_blank" class="button secondary">📄 View PDF</a>
                     
                     <a href="/report/stands/?download=1" class="button secondary">⬇ Download PDF</a>
                     
@@ -400,6 +400,30 @@
                                                             {% if not forloop.last %}<br>{% endif %}
                                                         {% endfor %}
                                                     </div>
+
+                                                    {% if request.user.is_staff or request.user.is_superuser %}
+                                                        <div style="margin-top:8px;">
+                                                            <button type="submit"
+                                                                    form="admin-action-form"
+                                                                    name="booking_stand_id"
+                                                                    value="{{ s.id }}"
+                                                                    formaction="{% url 'booking_stand_action' %}"
+                                                                    onclick="this.form.action.value='approve';"
+                                                                    style="background:#27ae60; color:white; border:none; border-radius:4px; padding:4px 6px; font-size:10px; cursor:pointer;">
+                                                              ✅ Approve
+                                                            </button>
+
+                                                            <button type="submit"
+                                                                    form="admin-action-form"
+                                                                    name="booking_stand_id"
+                                                                    value="{{ s.id }}"
+                                                                    formaction="{% url 'booking_stand_action' %}"
+                                                                    onclick="this.form.action.value='reject';"
+                                                                    style="background:#c0392b; color:white; border:none; border-radius:4px; padding:4px 6px; font-size:10px; cursor:pointer;">
+                                                               ❌ Reject
+                                                            </button>
+                                                        </div>
+                                                    {% endif %}                
                                                 </div>
                                             {% endif %}
                                         {% endfor %}
@@ -422,6 +446,12 @@
                 {% endif %}
             </div>    
 
+
+        <form id="admin-action-form" method="post" style="display:none;">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="">
+        </form>
+
         <div class="section">
             <h2>My Bookings</h2>
             {% if bookings %}
@@ -440,13 +470,6 @@
             {% endif %}
         </div>
     </div>
-
-    <script>
-        const standMap = {
-            {% for stand in booking_form.fields.stand.queryset %}
-                {{ stand.number }}: {{ stand.id }},
-            {% endfor %}
-        };
 
 <script>
     const standMap = {

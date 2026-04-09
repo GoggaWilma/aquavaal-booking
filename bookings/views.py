@@ -101,7 +101,7 @@ def dashboard(request):
                             existing["bookings"].append(entry)
                         else:
                             booked_stands.append({
-                                "id": bs.stand.id,
+                                "id": bs.id,
                                 "number": bs.stand.number,
                                 "bookings": [entry],
                                 "name": entry["name"],
@@ -237,6 +237,47 @@ def dashboard(request):
 
     return render(request, "dashboard.html", context)
 
+@login_required
+def booking_stand_action(request):
+    if request.method != "POST":
+        messages.error(request, "Invalid request.")
+        return redirect("dashboard")
+
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, "You do not have permission to perform this action.")
+        return redirect("dashboard")
+
+    booking_stand_id = request.POST.get("booking_stand_id")
+    action = request.POST.get("action")
+
+    if not booking_stand_id or not action:
+        messages.error(request, "Missing booking stand action details.")
+        return redirect("dashboard")
+
+    try:
+        booking_stand = BookingStand.objects.select_related("booking", "stand").get(id=booking_stand_id)
+    except BookingStand.DoesNotExist:
+        messages.error(request, "Booking stand not found.")
+        return redirect("dashboard")
+
+    if action == "approve":
+        booking_stand.approval_status = "APPROVED"
+        booking_stand.booking.status = "APPROVED"
+        booking_stand.booking.save(update_fields=["status"])
+        booking_stand.save(update_fields=["approval_status"])
+        messages.success(request, f"Stand {booking_stand.stand.number} approved.")
+
+    elif action == "reject":
+        booking_stand.approval_status = "REJECTED"
+        booking_stand.booking.status = "REJECTED"
+        booking_stand.booking.save(update_fields=["status"])
+        booking_stand.save(update_fields=["approval_status"])
+        messages.success(request, f"Stand {booking_stand.stand.number} rejected.")
+
+    else:
+        messages.error(request, "Unknown action.")
+
+    return redirect("dashboard")
 
 def stand_report_pdf(request):
     response = HttpResponse(content_type="application/pdf")
