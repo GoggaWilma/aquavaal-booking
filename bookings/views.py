@@ -287,6 +287,7 @@ def booking_stand_action(request):
         booking_stand.booking.save(update_fields=["status"])
         booking_stand.save(update_fields=["approval_status"])
 
+        # Email to Ivor
         try:
             send_mail(
                 subject=f"✅ Booking Approved - Stand {booking_stand.stand.number}",
@@ -297,7 +298,7 @@ def booking_stand_action(request):
     Stand: {booking_stand.stand.number}
     Arrival: {booking_stand.booking.arrival_datetime.strftime('%d %b %Y %H:%M')}
     Departure: {booking_stand.booking.departure_datetime.strftime('%d %b %Y %H:%M')}
-    Status: {booking_stand.booking.status} 
+    Status: {booking_stand.booking.status}
     """,
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 recipient_list=["ivor.engelbrecht@gmail.com"],
@@ -306,7 +307,30 @@ def booking_stand_action(request):
         except Exception as e:
             print("Approve email failed:", e)
 
+        # Email to user
+        if booking_stand.booking.user and booking_stand.booking.user.email:
+            try:
+                send_mail(
+                    subject=f"Your booking was approved - Stand {booking_stand.stand.number}",
+                    message=f"""
+    Good news, your booking has been approved.
+ 
+    Stand: {booking_stand.stand.number}
+    Arrival: {booking_stand.booking.arrival_datetime.strftime('%d %b %Y %H:%M')}
+    Departure: {booking_stand.booking.departure_datetime.strftime('%d %b %Y %H:%M')}
+    Status: {booking_stand.booking.status}
+
+    Thank you.
+    """,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[booking_stand.booking.user.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                print("User approve email failed:", e)
+
         messages.success(request, f"Stand {booking_stand.stand.number} approved.")
+
 
     elif action == "reject":
         booking_stand.approval_status = "REJECTED"
@@ -314,10 +338,11 @@ def booking_stand_action(request):
         booking_stand.booking.save(update_fields=["status"])
         booking_stand.save(update_fields=["approval_status"])
 
+        # Email to Ivor
         try:
             send_mail(
                 subject=f"❌ Booking Rejected - Stand {booking_stand.stand.number}",
-            message=f"""
+                message=f"""
     Booking rejected:
 
     Name: {booking_stand.booking.display_name()}
@@ -332,6 +357,28 @@ def booking_stand_action(request):
             )
         except Exception as e:
             print("Reject email failed:", e)
+
+        # Email to user
+        if booking_stand.booking.user and booking_stand.booking.user.email:
+            try:
+                send_mail(
+                    subject=f"Your booking was rejected - Stand {booking_stand.stand.number}",
+                    message=f"""
+    Your booking was unfortunately rejected.
+
+    Stand: {booking_stand.stand.number}
+    Arrival: {booking_stand.booking.arrival_datetime.strftime('%d %b %Y %H:%M')}
+    Departure: {booking_stand.booking.departure_datetime.strftime('%d %b %Y %H:%M')}
+    Status: {booking_stand.booking.status}
+
+    Please contact Ivor if you need assistance.
+    """,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[booking_stand.booking.user.email],
+                    fail_silently=False,
+                )
+            except Exception as e:
+                print("User reject email failed:", e)
 
         messages.success(request, f"Stand {booking_stand.stand.number} rejected.")
 
