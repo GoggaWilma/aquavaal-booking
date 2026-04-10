@@ -13,6 +13,8 @@ from stands.models import Stand
 from .models import Booking, BookingStand
 from .forms import DashboardBookingForm
 
+from django.core.mail import send_mail
+from django.conf import settings
 
 @login_required
 def dashboard(request):
@@ -211,6 +213,26 @@ def dashboard(request):
                     approval_status="PENDING",
                     is_active=True,
                 )
+
+                # Send email notification
+                try:
+                    send_mail(
+                        subject="New Booking Created",
+                        message=f"""
+                New booking created:
+
+                Name: {booking.display_name()}
+                Stand: {stand.number}
+                Arrival: {booking.arrival_datetime.strftime('%d %b %Y %H:%M')}
+                Departure: {booking.departure_datetime.strftime('%d %b %Y %H:%M')}
+                Status: {booking.status}
+                """,
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=["ivor.engelbrecht@gmail.com"],
+                        fail_silently=True,
+                    )
+                except Exception as e:
+                    print("Email failed:", e)
 
                 messages.success(request, f"Booking created successfully for Stand {stand.number}.")
                 return redirect("dashboard")
