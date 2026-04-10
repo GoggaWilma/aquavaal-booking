@@ -286,6 +286,26 @@ def booking_stand_action(request):
         booking_stand.booking.status = "APPROVED"
         booking_stand.booking.save(update_fields=["status"])
         booking_stand.save(update_fields=["approval_status"])
+
+        try:
+            send_mail(
+                subject=f"✅ Booking Approved - Stand {booking_stand.stand.number}",
+                message=f"""
+    Booking approved:
+
+    Name: {booking_stand.booking.display_name()}
+    Stand: {booking_stand.stand.number}
+    Arrival: {booking_stand.booking.arrival_datetime.strftime('%d %b %Y %H:%M')}
+    Departure: {booking_stand.booking.departure_datetime.strftime('%d %b %Y %H:%M')}
+    Status: {booking_stand.booking.status} 
+    """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=["ivor.engelbrecht@gmail.com"],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print("Approve email failed:", e)
+
         messages.success(request, f"Stand {booking_stand.stand.number} approved.")
 
     elif action == "reject":
@@ -293,7 +313,28 @@ def booking_stand_action(request):
         booking_stand.booking.status = "REJECTED"
         booking_stand.booking.save(update_fields=["status"])
         booking_stand.save(update_fields=["approval_status"])
+
+        try:
+            send_mail(
+                subject=f"❌ Booking Rejected - Stand {booking_stand.stand.number}",
+            message=f"""
+    Booking rejected:
+
+    Name: {booking_stand.booking.display_name()}
+    Stand: {booking_stand.stand.number}
+    Arrival: {booking_stand.booking.arrival_datetime.strftime('%d %b %Y %H:%M')}
+    Departure: {booking_stand.booking.departure_datetime.strftime('%d %b %Y %H:%M')}
+    Status: {booking_stand.booking.status}
+    """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=["ivor.engelbrecht@gmail.com"],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print("Reject email failed:", e)
+
         messages.success(request, f"Stand {booking_stand.stand.number} rejected.")
+
 
     else:
         messages.error(request, "Unknown action.")
