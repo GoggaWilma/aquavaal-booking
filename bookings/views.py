@@ -214,26 +214,6 @@ def dashboard(request):
                     is_active=True,
                 )
 
-                # Send email notification
-                try:
-                    send_mail(
-                        subject="New Booking Created",
-                        message=f"""
-                New booking created:
-
-                Name: {booking.display_name()}
-                Stand: {stand.number}
-                Arrival: {booking.arrival_datetime.strftime('%d %b %Y %H:%M')}
-                Departure: {booking.departure_datetime.strftime('%d %b %Y %H:%M')}
-                Status: {booking.status}
-                """,
-                        from_email=settings.DEFAULT_FROM_EMAIL,
-                        recipient_list=["ivor.engelbrecht@gmail.com"],
-                        fail_silently=True,
-                    )
-                except Exception as e:
-                    print("Email failed:", e)
-
                 messages.success(request, f"Booking created successfully for Stand {stand.number}.")
                 return redirect("dashboard")
         else:
