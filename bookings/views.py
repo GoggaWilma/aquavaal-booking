@@ -411,9 +411,15 @@ def admin_stand_board(request):
     booked_stand_ids = set()
     unavailable_stand_ids = set()
 
+    yesterday = timezone.localdate() - timedelta(days=1)
+
     booking_stands = BookingStand.objects.filter(
-        is_active=True
-    ).select_related("stand", "booking", "booking__user")
+        is_active=True,
+        booking__departure_datetime__date__gte=yesterday,
+    ).select_related("stand", "booking", "booking__user").order_by(
+        "stand__number",
+        "booking__arrival_datetime",
+    )
 
     for bs in booking_stands:
         if not bs.stand_id:
@@ -459,6 +465,10 @@ def admin_stand_board(request):
                     "number": bs.stand.number,
                     "bookings": [entry],
                 })
+
+    pending_stands = sorted(pending_stands, key=lambda x: x["number"])
+    booked_stands = sorted(booked_stands, key=lambda x: x["number"])
+    unavailable_stands = sorted(unavailable_stands, key=lambda x: x["number"])
 
     context = {
         "stand_sections": stand_sections,
