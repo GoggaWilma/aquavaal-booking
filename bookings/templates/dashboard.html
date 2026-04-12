@@ -1,8 +1,48 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Aqua Vaal Hengelklub Dashboard</title>
     <style>
+        /* all your css stays here */
+    <style>
+<head>
+
+<body>
+    <div class="container">
+   
+        <div class="header">
+            <img src="{% static 'images/logo.png' %}" alt="Aqua Va>
+            <div>
+                <h1>Aqua Vaal Hengelklub Dashboard</h1>
+                <p class="subtext">Choose dates, check availabilit>
+            </div>
+        </div>
+
+    .header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 10px;
+    }
+
+    @media (max-width: 600px) {
+        .header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .logo {
+            height: 45px;
+        }
+    }
+
+    .logo {
+        height: 55px;
+        width: auto;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
+        object-fit: contain;
+    }
+
         body {
             font-family: Arial, sans-serif;
             background: #f4f7f9;
@@ -321,6 +361,7 @@
                     <a href="/report/stands/?download=1" class="button secondary"> Download PDF</a>
                     
                     <a href="/admin/" class="button danger">⚙ Admin</a>
+                    
                 </div>
             </form>
 
