@@ -3,6 +3,7 @@
 <html>
 <head>
     <style>
+        /* HEADER */
         .header {
             display: flex;
             align-items: center;
@@ -17,17 +18,7 @@
             filter: drop-shadow(0 2px 6px rgba(0,0,0,0.25));
         }
 
-        @media (max-width: 600px) {
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .logo {
-                height: 45px;
-            }
-        }
-
+        /* BASE */
         body {
             font-family: Arial, sans-serif;
             background: #f4f7f9;
@@ -50,21 +41,8 @@
             color: #5d6d7e;
             margin-bottom: 20px;
         }
-    </style>
-</head>
 
-<body>
-    <div class="container">
-
-        <div class="header">
-            <img src="{% static 'images/Aqua Vaal logo.png' %}" alt="Aqua Vaal Logo" class="logo">
-            <div>
-                <h1>Aqua Vaal Hengelklub Dashboard</h1>
-                <p class="subtext">Choose dates, check availability, click a stand, then create your booking.</p>
-            </div>
-        </div>
-
-
+        /* SECTION */
         .section {
             background: white;
             border-radius: 10px;
@@ -73,6 +51,7 @@
             box-shadow: 0 4px 14px rgba(0,0,0,0.08);
         }
 
+        /* BUTTONS */
         button, .button {
             display: inline-block;
             padding: 10px 16px;
@@ -88,11 +67,6 @@
             background: #5d6d7e;
         }
 
-        button:disabled {
-            background: #bfc9ca;
-            cursor: not-allowed;
-        }
-
         .button.primary {
             background: #27ae60;
         }
@@ -101,6 +75,12 @@
             background: #c0392b;
         }
 
+        button:disabled {
+            background: #bfc9ca;
+            cursor: not-allowed;
+        }
+
+        /* FORM */
         .form-row {
             margin-bottom: 15px;
         }
@@ -113,6 +93,7 @@
             max-width: 320px;
         }
 
+        /* MESSAGES */
         .messages {
             margin-bottom: 20px;
         }
@@ -133,6 +114,7 @@
             color: #922b21;
         }
 
+        /* STANDS GRID */
         .stand-grid {
             display: flex;
             flex-wrap: wrap;
@@ -154,6 +136,7 @@
             transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
+        /* STAND STATES */
         .stand-available {
             background: #2ECC71;
             color: white;
@@ -188,6 +171,7 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.2);
         }
 
+        /* TEXT INSIDE STAND */
         .stand-name {
             display: block;
             margin-top: 6px;
@@ -196,10 +180,12 @@
             line-height: 1.3;
         }
 
+        /* BUTTON ROW */
         .button-row {
             margin-top: 15px;
         }
 
+        /* LISTS */
         ul {
             padding-left: 20px;
         }
@@ -213,6 +199,7 @@
             font-size: 14px;
         }
 
+        /* TOOLTIP */
         .tooltip {
             visibility: hidden;
             opacity: 0;
@@ -239,6 +226,23 @@
             opacity: 1;
         }
 
+        /* STICKY BOOKING BAR */
+        .sticky-booking-bar {
+            position: sticky;
+            top: 10px;
+            z-index: 15;
+            background: white;
+            padding: 10px 0;
+        }
+
+        /* BUTTON ROW FIX */
+        .button-row a,
+        .button-row button {
+            margin-top: 6px;
+            display: inline-block;
+        }
+
+        /* MOBILE */
         @media (max-width: 768px) {
             .container {
                 margin: 15px auto;
@@ -279,29 +283,7 @@
                 min-width: 130px;
                 font-size: 10px;
             }
-        }
 
-        @media (max-width: 480px) {
-            .stand-tile {
-                width: 100%;
-            }
-        }
-    
-        .sticky-booking-bar {
-            position: sticky;
-            top: 10px;
-            z-index: 15;
-            background: white;
-            padding: 10px 0;
-        }
-
-        .button-row a,
-        .button-row button {
-            margin-top: 6px;
-            display: inline-block;
-        }
-
-        @media (max-width: 768px) {
             .button-row a,
             .button-row button {
                 width: 100%;
@@ -314,8 +296,39 @@
             }
         }
 
-</style>
+        /* SMALL MOBILE */
+        @media (max-width: 480px) {
+            .stand-tile {
+            width: 100%;
+            }
+        }
+
+        /* HEADER MOBILE */
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .logo {
+                height: 45px;
+            }
+        }
+
+    </style>
 </head>
+
+<body>
+    <div class="container">
+
+        <div class="header">
+            <img src="{% static 'images/Aqua Vaal logo.png' %}" alt="Aqua Vaal Logo" class="logo">
+            <div>
+                <h1>Aqua Vaal Hengelklub Dashboard</h1>
+                <p class="subtext">Choose dates, check availability, click a stand, then create your booking.</p>
+            </div>
+        </div>
+
 <body>
     <div class="container">
 
