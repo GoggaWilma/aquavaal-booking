@@ -390,12 +390,9 @@ def booking_stand_action(request):
 
 @login_required
 def admin_stand_board(request):
-    # Only allow staff/admin
     if not request.user.is_staff and not request.user.is_superuser:
         messages.error(request, "You do not have permission to view this page.")
         return redirect("dashboard")
-
-    today = timezone.now().date()
 
     stand_sections = [
         ("Eskom Members", [1, 2]),
@@ -414,7 +411,6 @@ def admin_stand_board(request):
     booked_stand_ids = set()
     unavailable_stand_ids = set()
 
-    # Pull ALL active bookings (no date filter yet)
     booking_stands = BookingStand.objects.filter(
         is_active=True
     ).select_related("stand", "booking", "booking__user")
@@ -442,7 +438,6 @@ def admin_stand_board(request):
             booked_stand_ids.add(bs.stand_id)
 
             existing = next((s for s in booked_stands if s["number"] == bs.stand.number), None)
-
             if existing:
                 existing["bookings"].append(entry)
             else:
@@ -456,7 +451,6 @@ def admin_stand_board(request):
             pending_stand_ids.add(bs.stand_id)
 
             existing = next((s for s in pending_stands if s["number"] == bs.stand.number), None)
-
             if existing:
                 existing["bookings"].append(entry)
             else:
@@ -471,6 +465,9 @@ def admin_stand_board(request):
         "pending_stands": pending_stands,
         "booked_stands": booked_stands,
         "unavailable_stands": unavailable_stands,
+        "pending_stand_numbers": [s["number"] for s in pending_stands],
+        "booked_stand_numbers": [s["number"] for s in booked_stands],
+        "unavailable_stand_numbers": [s["number"] for s in unavailable_stands],
     }
 
     return render(request, "admin_stand_board.html", context)

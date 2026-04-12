@@ -240,10 +240,7 @@
 
                         {% for number in stand_numbers %}
 
-                            {% if number in unavailable_stands|dictsort:"number"|join:" " %}
-                            {% endif %}
-
-                            {% with found=False %}
+                            {% if number in unavailable_stand_numbers %}
                                 {% for s in unavailable_stands %}
                                     {% if s.number == number %}
                                         <div class="stand-tile stand-unavailable">
@@ -257,6 +254,7 @@
                                     {% endif %}
                                 {% endfor %}
 
+                            {% elif number in booked_stand_numbers %}
                                 {% for s in booked_stands %}
                                     {% if s.number == number %}
                                         <div class="stand-tile stand-booked">
@@ -273,6 +271,7 @@
                                     {% endif %}
                                 {% endfor %}
 
+                            {% elif number in pending_stand_numbers %}
                                 {% for s in pending_stands %}
                                     {% if s.number == number %}
                                         <div class="stand-tile stand-pending">
@@ -307,13 +306,12 @@
                                     {% endif %}
                                 {% endfor %}
 
-                                {% if number not in pending_stands|join:" " and number not in booked_stands|join:" " and number not in unavailable_stands|join:" " %}
-                                    <div class="stand-tile stand-available">
-                                        Stand {{ number }}
-                                        <span class="stand-name">Available</span>
-                                    </div>
-                                {% endif %}
-                            {% endwith %}
+                            {% else %}
+                                <div class="stand-tile stand-available">
+                                    Stand {{ number }}
+                                    <span class="stand-name">Available</span>
+                                </div>
+                            {% endif %}
 
                         {% endfor %}
                     </div>
