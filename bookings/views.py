@@ -389,6 +389,11 @@ def booking_stand_action(request):
     return redirect("dashboard")
 
 
+@login_required
+def admin_stand_board(request):
+    return render(request, "admin_stand_board.html")
+
+
 def stand_report_pdf(request):
     response = HttpResponse(content_type="application/pdf")
     
