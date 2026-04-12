@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Stand Board</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f7f9;
+            margin: 0;
+            padding: 0;
+            color: #1f2d3d;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        h1, h2, h3 {
+            color: #154360;
+        }
+
+        .subtext {
+            color: #5d6d7e;
+            margin-bottom: 20px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        .button, button {
+            display: inline-block;
+            padding: 10px 16px;
+            background: #2f6f8f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .button.secondary {
+            background: #5d6d7e;
+        }
+
+        .button-row {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+
+        .message.success {
+            background: #d4efdf;
+            color: #1e8449;
+        }
+
+        .message.error {
+            background: #f9d6d5;
+            color: #922b21;
+        }
+
+        .stand-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stand-tile {
+            width: 110px;
+            min-height: 100px;
+            border-radius: 8px;
+            padding: 10px;
+            box-sizing: border-box;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .stand-available {
+            background: #2ECC71;
+            color: white;
+        }
+
+        .stand-booked {
+            background: #1F618D;
+            color: white;
+        }
+
+        .stand-pending {
+            background: #F1C40F;
+            color: black;
+        }
+
+        .stand-unavailable {
+            background: #C0392B;
+            color: white;
+        }
+
+        .stand-name {
+            display: block;
+            margin-top: 6px;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.3;
+        }
+
+        .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1f2d3d;
+            color: white;
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            line-height: 1.4;
+            min-width: 170px;
+            z-index: 20;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .stand-tile:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .admin-actions {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .approve-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .reject-btn {
+            background: #c0392b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px auto;
+                padding: 12px;
+            }
+
+            .section {
+                padding: 15px;
+            }
+
+            .stand-tile {
+                width: calc(50% - 8px);
+            }
+
+            .button-row {
+                flex-direction: column;
+            }
+
+            .button, button {
+                width: 100%;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stand-tile {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Admin Stand Board</h1>
+        <p class="subtext">Visual stand layout for admin bookings and approvals.</p>
+
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message {% if message.tags == 'success' %}success{% else %}error{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="section">
+            <div class="button-row">
+                <a href="/" class="button">← Back to Dashboard</a>
+                <a href="/admin/" class="button secondary">⚙ Admin</a>
+                <a href="/report/stands/" target="_blank" class="button secondary">📄 View PDF</a>
+            </div>
+
+            <h3 style="margin-top:20px;">Stand Layout</h3>
+            <p class="subtext">Green = Available | Yellow = Pending | Blue = Booked | Red = Unavailable</p>
+
+            {% for section_name, stand_numbers in stand_sections %}
+                <div style="margin-bottom: 20px;">
+                    <h3>{{ section_name }}</h3>
+                    <div class="stand-grid">
+
+                        {% for number in stand_numbers %}
+
+                            {% if number in unavailable_stands|dictsort:"number"|join:" " %}
+                            {% endif %}
+
+                            {% with found=False %}
+                                {% for s in unavailable_stands %}
+                                    {% if s.number == number %}
+                                        <div class="stand-tile stand-unavailable">
+                                            Stand {{ number }}
+                                            <span class="stand-name">{{ s.reason }}</span>
+                                            <div class="tooltip">
+                                                <strong>Unavailable</strong><br>
+                                                Reason: {{ s.reason }}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% for s in booked_stands %}
+                                    {% if s.number == number %}
+                                        <div class="stand-tile stand-booked">
+                                            Stand {{ number }}
+                                            <span class="stand-name">Booked</span>
+                                            <div class="tooltip">
+                                                {% for b in s.bookings %}
+                                                    <strong>{{ b.name }}</strong><br>
+                                                    {{ b.arrival }} to {{ b.departure }}<br>
+                                                    {% if not forloop.last %}<br>{% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% for s in pending_stands %}
+                                    {% if s.number == number %}
+                                        <div class="stand-tile stand-pending">
+                                            Stand {{ number }}
+                                            <span class="stand-name">Pending</span>
+
+                                            <div class="tooltip">
+                                                {% for b in s.bookings %}
+                                                    <strong>{{ b.name }}</strong><br>
+                                                    Pending<br>
+                                                    {{ b.arrival }} to {{ b.departure }}<br>
+                                                    {% if not forloop.last %}<br>{% endif %}
+                                                {% endfor %}
+                                            </div>
+
+                                            <div class="admin-actions">
+                                                <form method="post" action="{% url 'booking_stand_action' %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="booking_stand_id" value="{{ s.id }}">
+                                                    <input type="hidden" name="action" value="approve">
+                                                    <button type="submit" class="approve-btn">✅ Approve</button>
+                                                </form>
+
+                                                <form method="post" action="{% url 'booking_stand_action' %}">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="booking_stand_id" value="{{ s.id }}">
+                                                    <input type="hidden" name="action" value="reject">
+                                                    <button type="submit" class="reject-btn">❌ Reject</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if number not in pending_stands|join:" " and number not in booked_stands|join:" " and number not in unavailable_stands|join:" " %}
+                                    <div class="stand-tile stand-available">
+                                        Stand {{ number }}
+                                        <span class="stand-name">Available</span>
+                                    </div>
+                                {% endif %}
+                            {% endwith %}
+
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

@@ -83,7 +83,7 @@ def dashboard(request):
                         if bs.stand_id not in unavailable_stand_ids:
                             unavailable_stand_ids.add(bs.stand_id)
                             unavailable_stands.append({
-                                "id": bs.stand.id,
+                                "id": bs.id,
                                 "number": bs.stand.number,
                                 "reason": bs.unavailable_reason or "Unavailable",
                             })
@@ -127,7 +127,7 @@ def dashboard(request):
                             existing["bookings"].append(entry)
                         else:
                             pending_stands.append({
-                                "id": bs.stand.id,
+                                "id": bs.id,
                                 "number": bs.stand.number,
                                 "bookings": [entry],
                                 "name": entry["name"],
@@ -387,6 +387,93 @@ def booking_stand_action(request):
         messages.error(request, "Unknown action.")
 
     return redirect("dashboard")
+
+@login_required
+def admin_stand_board(request):
+    # Only allow staff/admin
+    if not request.user.is_staff and not request.user.is_superuser:
+        messages.error(request, "You do not have permission to view this page.")
+        return redirect("dashboard")
+
+    today = timezone.now().date()
+
+    stand_sections = [
+        ("Eskom Members", [1, 2]),
+        ("Owner 3", [3]),
+        ("Boat Club Members", [4, 5, 6]),
+        ("Owners 7 to 14", [7, 8, 9, 10, 11, 12, 13, 14]),
+        ("Public", [15, 16, 17, 18, 19, 20, 21]),
+        ("Owners 22 to 40", [22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]),
+    ]
+
+    pending_stands = []
+    booked_stands = []
+    unavailable_stands = []
+
+    pending_stand_ids = set()
+    booked_stand_ids = set()
+    unavailable_stand_ids = set()
+
+    # Pull ALL active bookings (no date filter yet)
+    booking_stands = BookingStand.objects.filter(
+        is_active=True
+    ).select_related("stand", "booking", "booking__user")
+
+    for bs in booking_stands:
+        if not bs.stand_id:
+            continue
+
+        entry = {
+            "name": bs.booking.display_name(),
+            "arrival": bs.booking.arrival_datetime.strftime("%d %b %Y"),
+            "departure": bs.booking.departure_datetime.strftime("%d %b %Y"),
+        }
+
+        if bs.approval_status == "UNAVAILABLE":
+            if bs.stand_id not in unavailable_stand_ids:
+                unavailable_stand_ids.add(bs.stand_id)
+                unavailable_stands.append({
+                    "id": bs.id,
+                    "number": bs.stand.number,
+                    "reason": bs.unavailable_reason or "Unavailable",
+                })
+
+        elif bs.approval_status in ["APPROVED", "READY_FOR_GATE"]:
+            booked_stand_ids.add(bs.stand_id)
+
+            existing = next((s for s in booked_stands if s["number"] == bs.stand.number), None)
+
+            if existing:
+                existing["bookings"].append(entry)
+            else:
+                booked_stands.append({
+                    "id": bs.id,
+                    "number": bs.stand.number,
+                    "bookings": [entry],
+                })
+
+        elif bs.approval_status == "PENDING":
+            pending_stand_ids.add(bs.stand_id)
+
+            existing = next((s for s in pending_stands if s["number"] == bs.stand.number), None)
+
+            if existing:
+                existing["bookings"].append(entry)
+            else:
+                pending_stands.append({
+                    "id": bs.id,
+                    "number": bs.stand.number,
+                    "bookings": [entry],
+                })
+
+    context = {
+        "stand_sections": stand_sections,
+        "pending_stands": pending_stands,
+        "booked_stands": booked_stands,
+        "unavailable_stands": unavailable_stands,
+    }
+
+    return render(request, "admin_stand_board.html", context)
 
 def stand_report_pdf(request):
     response = HttpResponse(content_type="application/pdf")
