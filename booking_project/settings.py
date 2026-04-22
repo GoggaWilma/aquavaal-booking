@@ -90,11 +90,15 @@ WSGI_APPLICATION = 'booking_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-
 DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL')
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'appaquav_aquavaaldb',
+        'USER': 'appaquav_superuser',
+        'PASSWORD': 'Wil70@99@Gog65',
+        'HOST': 'localhost',
+        'PORT': '3306',
+    }
 }
 
 # Fallback for local (cPanel)
